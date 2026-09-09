@@ -31,4 +31,20 @@
     <string name="help">Βοήθεια</string>
     <string name="show_more">Εμφάνισε περισσότερα</string>
     <string name="show_less">Εμφάνισε λιγότερα</string>
+    <string name="crash_dialog_message">Παρουσιάστηκε ένα απροσδόκητο σφάλμα, με αποτέλεσμα η εφαρμογή να διακοπεί. Θέλετε να στείλετε την αναφορά σφάλματος μέσω ηλεκτρονικού ταχυδρομείου, ώστε να βοηθήσετε στην επίλυση του προβλήματος;</string>
+    <string name="crash_dialog_comment_prompt">Εδώ μπορείτε να προσθέσετε επιπλέον πληροφορίες:</string>
+    <string name="crash_dialog_button_cancel">Ακύρωση</string>
+    <string name="qr_code">Κώδικας QR</string>
+    <string name="filter_title">Τίτλος</string>
+    <string name="filter_artist">Καλλιτέχνης</string>
+    <string name="library">Βιβλιοθήκη</string>
+    <string name="unviewed_track_label">ΝΕΟΣ</string>
+    <string name="filter_all">Όλα</string>
+    <string name="title">Τίτλος</string>
+    <string name="artist">Καλλιτέχνης</string>
+    <string name="album">Άλμπουμ</string>
+    <string name="year">Έτος</string>
+    <string name="artwork_share_menu_link">Σύνδεσμος</string>
+    <string name="artwork_share_menu_image">Εικόνα</string>
+    <string name="track_metadata">Μεταδεδομένα</string>
 </resources>
