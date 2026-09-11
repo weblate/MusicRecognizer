@@ -328,4 +328,18 @@
     <string name="app_shortcut_show_floating_button_long">Lebegő gomb</string>
     <string name="pref_title_floating_button">Lebegő gomb</string>
     <string name="pref_subtitle_floating_button">Lebegő gomb megjelenítése más alkalmazások fölött a felismerés gyors eléréséhez</string>
+    <string name="qr_code">QR kód</string>
+    <string name="file_manager_not_found_toast">Fájlkezelő nem található</string>
+    <string name="reorder">Átrendezés</string>
+    <string name="result_title_no_sound_detected">Nincs hang észlelve</string>
+    <string name="result_message_no_sound_detected_microphone">Ellenőrizd, hogy elég hangosan szól-e a zene a közelben, majd próbáld újra</string>
+    <string name="result_message_no_sound_detected_device">Ellenőrizd, hogy szól-e zene a készülékeden, majd próbáld újra</string>
+    <string name="internal_audio_capture_may_be_blocked">Bizonyos alkalmazások korlátozhatják a belső hangjuk rögzítését. Váltsd át a hangforrást mikrofonra, és próbáld meg hangosan lejátszani a zenét.</string>
+    <plurals name="items_selected">
+        <item quantity="one">%d kiválasztva</item>
+        <item quantity="other">%d kiválasztva</item>
+    </plurals>
+    <string name="about_pref_title_donation">Adományozás</string>
+    <string name="about_pref_subtitle_donation">Támogasd a projektet</string>
+    <string name="about_pref_donation_message">Ez az alkalmazás teljesen ingyenes. Nincsenek benne reklámok, sem más kereskedelmi bevételi forma. Ha szeretnéd támogatni a további fejlesztést, vagy csak köszönetet mondani, fontold meg az adományozást. Köszönöm a támogatást!</string>
 </resources>
