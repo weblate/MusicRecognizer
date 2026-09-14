@@ -51,11 +51,11 @@ internal fun WaveAnimated(
         val minSizePx = constraints.maxWidth.coerceAtMost(constraints.maxHeight)
         val maxWidthPx = constraints.maxWidth
         val maxHeightPx = constraints.maxHeight
-        val lineWidthPx = (minSizePx * properties.lineWidthFactor).toInt()
-        val spaceWidthPx = (lineWidthPx * properties.spaceWidthFactor).toInt()
-        val lineSpaceWidthPx = lineWidthPx + spaceWidthPx
-        val linesCount = (maxWidthPx - spaceWidthPx) / lineSpaceWidthPx
-        val spaceCount = linesCount - 1
+        val lineWidthPx = (minSizePx * properties.lineWidthFactor).toInt().coerceAtLeast(1)
+        val spaceWidthPx = (lineWidthPx * properties.spaceWidthFactor).toInt().coerceAtLeast(0)
+        val lineSpaceWidthPx = (lineWidthPx + spaceWidthPx).coerceAtLeast(1)
+        val linesCount = ((maxWidthPx - spaceWidthPx) / lineSpaceWidthPx).coerceAtLeast(0)
+        val spaceCount = (linesCount - 1).coerceAtLeast(0)
         val lineLengthPx = maxHeightPx - lineWidthPx // * 0.5f
 
         val currentColor by animateColorAsState(
@@ -82,7 +82,8 @@ internal fun WaveAnimated(
                     animation = tween(properties.animationSpeed, easing = EaseInOutSine),
                     repeatMode = RepeatMode.Reverse,
                     initialStartOffset = StartOffset(
-                        offsetMillis = properties.animationSpeed / (linesCount - 1) *
+                        offsetMillis = properties.animationSpeed /
+                            (linesCount - 1).coerceAtLeast(1) *
                             index * properties.periods,
                         offsetType = StartOffsetType.FastForward
                     )
