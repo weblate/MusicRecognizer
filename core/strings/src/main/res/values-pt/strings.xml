@@ -72,7 +72,7 @@
     <string name="copied">Copiado</string>
     <string name="share">Partilhar</string>
     <string name="web_browser_not_found_toast">Navegador web não encontrado</string>
-    <string name="cannot_share_toast">Não foi possível encontrar nenhuma app a partilhar</string>
+    <string name="cannot_share_toast">Não foi possível encontrar nenhuma app para partilhar isto</string>
     <string name="help">Ajuda</string>
     <string name="show_more">Mostrar mais</string>
     <string name="show_less">Mostrar menos</string>
@@ -320,4 +320,27 @@
     <string name="export_in_progress">A exportar…</string>
     <string name="export_csv_result_success">Ficheiro CSV criado com sucesso!</string>
     <string name="audio_source_dialog_alt_method_bullet_1">Não requer a permissão de espelhar o ecrã e contorna as restrições de captura de áudio de outras apps</string>
+    <string name="app_shortcut_show_floating_button_short">Botão</string>
+    <string name="app_shortcut_show_floating_button_long">Botão flutuante</string>
+    <string name="qr_code">Código QR</string>
+    <string name="file_manager_not_found_toast">Não consegui encontrar um gestor de ficheiros</string>
+    <string name="reorder">Reordenar</string>
+    <string name="button_retry_recognition_hint">Segure para repetir o reconhecimento</string>
+    <string name="result_title_no_sound_detected">Nenhum som detetado</string>
+    <string name="result_message_no_sound_detected_microphone">Por favor, certifique-se que a música toca alto o suficiente nas proximidades e tente novamente</string>
+    <string name="result_message_no_sound_detected_device">Por favor, certifique-se que a música toca no seu dispositivo e tente novamente</string>
+    <string name="internal_audio_capture_may_be_blocked">Algumas apps podem restringir a captura de áudio interno. Tente reproduzir a música em voz viva e mudar a fonte de áudio para o microfone.</string>
+    <plurals name="items_selected">
+        <item quantity="one">%d selecionado</item>
+        <item quantity="many">%d selecionados</item>
+        <item quantity="other">%d selecionados</item>
+    </plurals>
+    <string name="pref_title_prerecording_buffer">Buffer de pré-gravação</string>
+    <string name="pref_subtitle_prerecording_buffer">Gravar um buffer de áudio curto enquanto a app está aberta para um reconhecimento mais rápido</string>
+    <string name="pref_title_floating_button">Botão flutuante</string>
+    <string name="pref_subtitle_floating_button">Sobrepor um botão flutuante em outras apps para o acesso rápido ao reconhecimento</string>
+    <string name="about_pref_title_donation">Doação</string>
+    <string name="about_pref_subtitle_donation">Apoie o projeto</string>
+    <string name="about_pref_donation_message">Esta app é totalmente gratuita. Vem sem anúncios ou outras formas de monetização comercial. Para apoiar o desenvolvimento contínuo ou simplesmente agradecer, considere fazer uma doação. Obrigado pelo vosso apoio!</string>
+    <string name="notification_title_match_found">Correspondência encontrada!</string>
 </resources>
