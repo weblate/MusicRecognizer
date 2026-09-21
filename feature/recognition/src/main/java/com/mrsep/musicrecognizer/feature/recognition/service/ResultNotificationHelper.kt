@@ -107,6 +107,7 @@ class ResultNotificationHelper @Inject constructor(
                     "$errorMessage\n$scheduledTaskMessage"
                 } ?: errorMessage
                 resultNotificationBuilder(channelId)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setContentTitle(errorTitle)
                     .setContentText(errorMessage)
                     .setStyle(
@@ -134,6 +135,7 @@ class ResultNotificationHelper @Inject constructor(
                     }
                 }
                 resultNotificationBuilder(channelId)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setContentTitle(title)
                     .setContentText(message)
                     .setStyle(
@@ -151,6 +153,7 @@ class ResultNotificationHelper @Inject constructor(
                     "$message\n$scheduledTaskMessage"
                 } ?: message
                 resultNotificationBuilder(channelId)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setContentTitle(title)
                     .setContentText(message)
                     .setStyle(
@@ -172,6 +175,7 @@ class ResultNotificationHelper @Inject constructor(
                     AudioCaptureMode.Auto -> appContext.getString(StringsR.string.result_message_no_sound_detected_device)
                 }
                 resultNotificationBuilder(channelId)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setContentTitle(title)
                     .setContentText(message)
                     .setStyle(
@@ -189,6 +193,12 @@ class ResultNotificationHelper @Inject constructor(
                 val isLyricsFetcherRunning = trackMetadataFetchManager
                     .isLyricsFetcherEnqueuedOrRunning(result.track.id).first()
                 resultNotificationBuilder(channelId)
+                    .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                    .setPublicVersion(
+                        resultNotificationBuilder(channelId)
+                            .setContentTitle(appContext.getString(StringsR.string.notification_title_match_found))
+                            .build()
+                    )
                     .setContentTitle(result.track.title)
                     .setContentText(result.track.artist)
                     .setStyle(
@@ -244,9 +254,15 @@ class ResultNotificationHelper @Inject constructor(
             .setAutoCancel(true)
             .setOngoing(false)
             .setCategory(Notification.CATEGORY_MESSAGE)
-            .setSubText(formatDateAsSubText(enqueuedRecognition.creationDate))
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(
+                resultNotificationBuilder(channelId)
+                    .setContentTitle(appContext.getString(StringsR.string.notification_title_match_found))
+                    .build()
+            )
             .setContentTitle(contentTitle)
             .setContentText(contentText)
+            .setSubText(formatDateAsSubText(enqueuedRecognition.creationDate))
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .setBigContentTitle(contentTitle)
@@ -514,7 +530,7 @@ class ResultNotificationHelper @Inject constructor(
             .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_ALL)
     }
 
-    private fun buildResultsSummaryNotification(channelId: String): Notification {
+    private fun resultsSummaryNotificationBuilder(channelId: String): NotificationCompat.Builder {
         return NotificationCompat.Builder(appContext, channelId)
             .setSmallIcon(UiR.drawable.ic_notification_ready)
             .setBadgeIconType(NotificationCompat.BADGE_ICON_LARGE)
@@ -526,6 +542,15 @@ class ResultNotificationHelper @Inject constructor(
             .setGroup(groupKeyForChannel(channelId))
             .setGroupSummary(true)
             .addLibraryScreenDeepLink()
+    }
+
+    private fun buildResultsSummaryNotification(channelId: String): Notification {
+        return resultsSummaryNotificationBuilder(channelId)
+            .setPublicVersion(
+                resultsSummaryNotificationBuilder(channelId)
+                    .setContentTitle(appContext.getString(StringsR.string.notification_title_match_found))
+                    .build()
+            )
             .build()
     }
 

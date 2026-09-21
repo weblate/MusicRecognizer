@@ -28,6 +28,7 @@ class ServiceNotificationHelper @Inject constructor(
             .setCategory(Notification.CATEGORY_SERVICE)
             .setSilent(true) // Avoids alert sound during recording
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setDeleteIntent(DisableRecognitionControlServiceReceiver.pendingIntent(appContext))
     }
 
