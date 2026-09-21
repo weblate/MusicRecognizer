@@ -2,9 +2,11 @@
 
 Audile uses the Android Media Projection API (screen casting) to capture device audio. This is the only official way to capture internal audio on Android. The Media Projection API is designed in such a way that we cannot request access to audio exclusively, which is why the system prompts for permission to record the entire screen. However, Audile does not record or process any visual data from your screen, as only internal audio is captured for music recognition purposes.
 
-By default, Android requires you to approve a one-time runtime permission request every time a new internal audio recording session starts. If you find this repetitive prompt annoying, you can grant Audile permanent access to capture internal audio. 
+By default, Android requires you to approve a permission prompt every time a new internal audio recording session starts. If you find this repetitive prompt annoying, you can grant Audile permanent access to capture internal audio.
 
 *Note: You will still see the standard Android screencasting indicator in your status bar while the recording is active. Also, keep in mind that some apps restrict their own audio from being captured and the actions below do not allow you to bypass this.*
+
+Starting with Android 15, the screen casting permission dialog can no longer be shown while the device is locked. If you start recognition that uses screen casting from the lock screen, for example by tapping the quick settings tile, the permission dialog, and therefore the recognition itself, will only run after you unlock the device. Granting Audile permanent access to screen casting (using one of the methods below) bypasses this restriction and lets you start device audio recognition even from the lock screen.
 
 Below are several methods to grant this permission permanently.
 

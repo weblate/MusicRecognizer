@@ -2,6 +2,7 @@ package com.mrsep.musicrecognizer.feature.recognition.service
 
 import android.Manifest
 import android.app.AlertDialog
+import android.app.KeyguardManager
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
@@ -35,9 +36,9 @@ import com.mrsep.musicrecognizer.core.strings.R as StringsR
 private const val TAG = "RecognitionControlActivity"
 
 /**
- * This transparent activity is used to request required permissions and media projection token,
- * when recognition is requested from widgets, quick tiles, shortcuts, and notifications.
- * Also, it helps TileService to start foreground recognition service from background, see
+ * Transparent activity that requests runtime permissions and a media projection token
+ * when recognition is started from widgets, quick tiles, shortcuts, or notifications.
+ * Also lets TileService start the foreground recognition service from the background:
  * https://issuetracker.google.com/issues/299506164
  */
 @AndroidEntryPoint
@@ -49,9 +50,14 @@ class RecognitionControlActivity : ComponentActivity() {
     private val mediaProjectionManager get() =
         getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
 
+    private val keyguardManager get() =
+        getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+
     private lateinit var requestedAudioCaptureMode: AudioCaptureMode
     private var useAltDeviceSoundSource = false
     private var intentHandled = false
+    private var launchTransitionFinished = false
+    private var pendingScreenCaptureConsent = false
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -98,6 +104,7 @@ class RecognitionControlActivity : ComponentActivity() {
                 ?.let { requestedAudioCaptureMode = it }
             useAltDeviceSoundSource = getBoolean(KEY_ALT_DEVICE_SOURCE, false)
             intentHandled = getBoolean(KEY_INTENT_HANDLED, false)
+            pendingScreenCaptureConsent = getBoolean(KEY_PENDING_SCREEN_CAPTURE_CONSENT, false)
         }
     }
 
@@ -109,6 +116,7 @@ class RecognitionControlActivity : ComponentActivity() {
             }
             putBoolean(KEY_ALT_DEVICE_SOURCE, useAltDeviceSoundSource)
             putBoolean(KEY_INTENT_HANDLED, intentHandled)
+            putBoolean(KEY_PENDING_SCREEN_CAPTURE_CONSENT, pendingScreenCaptureConsent)
         }
     }
 
@@ -141,6 +149,23 @@ class RecognitionControlActivity : ComponentActivity() {
             }
         }
         intentHandled = true
+    }
+
+    // API 35 QPR1+: MediaProjection consent no longer has FLAG_SHOW_WHEN_LOCKED
+    // https://android.googlesource.com/platform/frameworks/base/+/496c34dadbb8 (b/351409536)
+    // Starting it during our enter transition races with keyguard occlusion and
+    // SystemUI cancels with RESULT_CANCELED, so wait until the transition finishes
+    override fun onEnterAnimationComplete() {
+        super.onEnterAnimationComplete()
+        launchTransitionFinished = true
+        if (pendingScreenCaptureConsent && !isFinishing) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                requestScreenCaptureConsent()
+            } else {
+                Log.w(TAG, "AudioPlaybackCapture API is available on Android 10+")
+                finish()
+            }
+        }
     }
 
     private suspend fun loadCaptureModePreferences(action: String) {
@@ -206,13 +231,28 @@ class RecognitionControlActivity : ComponentActivity() {
             AudioCaptureMode.Auto -> if (useAltDeviceSoundSource) {
                 startRecognitionWithMode(requestedAudioCaptureMode.toServiceMode(null))
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val intent = mediaProjectionManager.createScreenCaptureIntentForDisplay()
-                requestMediaProjectionLauncher.launch(intent)
+                requestScreenCaptureConsent()
             } else {
                 Log.w(TAG, "AudioPlaybackCapture API is available on Android 10+")
                 finish()
             }
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun requestScreenCaptureConsent() {
+        // Pre-API 35 the consent dialog itself overlays the lock screen, so it can be launched immediately
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM &&
+            keyguardManager.isKeyguardLocked &&
+            !launchTransitionFinished
+        ) {
+            pendingScreenCaptureConsent = true
+            return
+        }
+        pendingScreenCaptureConsent = false
+        requestMediaProjectionLauncher.launch(
+            mediaProjectionManager.createScreenCaptureIntentForDisplay()
+        )
     }
 
     private fun startRecognitionWithMode(audioCaptureServiceMode: AudioCaptureServiceMode) {
@@ -344,6 +384,7 @@ class RecognitionControlActivity : ComponentActivity() {
         private const val KEY_INTENT_HANDLED = "key_intent_handled"
         private const val KEY_REQUESTED_CAPTURE_MODE = "key_requested_capture_mode"
         private const val KEY_ALT_DEVICE_SOURCE = "key_alt_device_source"
+        private const val KEY_PENDING_SCREEN_CAPTURE_CONSENT = "key_pending_screen_capture_consent"
         private const val EXTRA_AUDIO_CAPTURE_MODE = "extra_audio_capture_mode"
 
         fun getRequiredPermissionsForRecognition(): Array<String> {
