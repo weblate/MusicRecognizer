@@ -5,7 +5,7 @@
     <string name="main_screen_listening_extra_time">Essayer une nouvelle fois</string>
     <!-- It's preferable to use more concise translations for the widget, notification and tile-->
     <string name="widget_tap_to_recognize">Appuyez pour reconnaitre</string>
-    <string name="widget_tap_to_try_again">Tapez pour réessayer</string>
+    <string name="widget_tap_to_try_again">Appuyez pour réessayer</string>
     <string name="widget_listening">Écoute en cours</string>
     <string name="widget_listening_subtitle">Veuillez patienter</string>
     <string name="widget_listening_subtitle_extra_time">Essayer une nouvelle fois</string>
