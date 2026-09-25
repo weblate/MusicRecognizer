@@ -2,6 +2,7 @@ package com.mrsep.musicrecognizer.core.data.enqueued
 
 import com.mrsep.musicrecognizer.core.common.di.ApplicationScope
 import com.mrsep.musicrecognizer.core.common.di.IoDispatcher
+import com.mrsep.musicrecognizer.core.data.PersistentStoreLock
 import com.mrsep.musicrecognizer.core.database.ApplicationDatabase
 import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitionEntity
 import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitionEntityWithTrack
@@ -17,6 +18,7 @@ import javax.inject.Inject
 
 internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
     private val audioSampleDataSource: AudioSampleDataSource,
+    private val storeLock: PersistentStoreLock,
     @ApplicationScope private val appScope: CoroutineScope,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     database: ApplicationDatabase
@@ -26,7 +28,7 @@ internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
     private val persistentCoroutineContext = appScope.coroutineContext + ioDispatcher
 
     override suspend fun createRecognition(sample: AudioSample, title: String): Int? {
-        return withContext(persistentCoroutineContext) {
+        return withStoreWrite {
             audioSampleDataSource.copy(sample)?.let { sample ->
                 val enqueued = EnqueuedRecognitionEntity(
                     id = 0,
@@ -40,13 +42,13 @@ internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun update(recognition: EnqueuedRecognition) {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             dao.update(recognition.toEntity())
         }
     }
 
     override suspend fun updateTitle(recognitionId: Int, newTitle: String) {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             dao.updateTitle(recognitionId, newTitle)
         }
     }
@@ -66,7 +68,7 @@ internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun delete(recognitionIds: List<Int>) {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             val files = dao.getRecordingFiles(recognitionIds)
             dao.delete(recognitionIds)
             files.forEach { file -> audioSampleDataSource.delete(file) }
@@ -74,9 +76,9 @@ internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteAll() {
-        withContext(persistentCoroutineContext) {
-            audioSampleDataSource.deleteAll()
+        withStoreWrite {
             dao.deleteAll()
+            audioSampleDataSource.deleteAll()
         }
     }
 
@@ -91,4 +93,9 @@ internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
             .map { list -> list.map(EnqueuedRecognitionEntityWithTrack::toDomain) }
             .flowOn(ioDispatcher)
     }
+
+    private suspend fun <T> withStoreWrite(block: suspend () -> T): T =
+        withContext(persistentCoroutineContext) {
+            storeLock.withShared(block)
+        }
 }

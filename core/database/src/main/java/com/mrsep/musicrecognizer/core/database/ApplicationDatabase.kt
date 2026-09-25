@@ -61,9 +61,9 @@ abstract class ApplicationDatabase : RoomDatabase() {
     }
 
     // https://www.sqlite.org/pragma.html#pragma_wal_checkpoint
-    // Fix SQLite cursor leaks
+    // TRUNCATE: checkpoint then shrink WAL to 0 bytes
     private fun checkout(): Boolean {
-        return query(SimpleSQLiteQuery("PRAGMA wal_checkpoint(FULL)")).use { cursor ->
+        return query(SimpleSQLiteQuery("PRAGMA wal_checkpoint(TRUNCATE)")).use { cursor ->
             cursor.moveToFirst()
             if (cursor.getInt(0) == 0) {
                 if (cursor.getInt(1) == -1 && cursor.getInt(2) == -1) {
@@ -74,5 +74,9 @@ abstract class ApplicationDatabase : RoomDatabase() {
                 false
             }
         }
+    }
+
+    companion object {
+        const val DATABASE_NAME = "application_database"
     }
 }

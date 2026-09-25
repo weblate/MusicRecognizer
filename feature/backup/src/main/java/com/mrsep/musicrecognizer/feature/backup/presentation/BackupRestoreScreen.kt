@@ -110,8 +110,14 @@ internal fun BackupRestoreScreen(
                 -> viewModel::cancelRestoreScopeJobs
 
                 is RestoreUiState.InProgress -> null /* main restore task is not cancelable */
-                is RestoreUiState.Result -> when (restoreState.result) {
-                    is RestoreResult.Success -> if (!restoreState.result.appRestartRequired) {
+                is RestoreUiState.Result -> when (val result = restoreState.result) {
+                    is RestoreResult.Success -> if (!result.appRestartRequired) {
+                        viewModel::cancelRestoreScopeJobs
+                    } else {
+                        null /* await app restart */
+                    }
+
+                    is RestoreResult.UnhandledError -> if (!result.appRestartRequired) {
                         viewModel::cancelRestoreScopeJobs
                     } else {
                         null /* await app restart */
@@ -121,7 +127,6 @@ internal fun BackupRestoreScreen(
                     RestoreResult.MalformedBackup,
                     RestoreResult.NewerVersionBackup,
                     RestoreResult.NotBackupFile,
-                    RestoreResult.UnhandledError,
                     -> viewModel::cancelRestoreScopeJobs
                 }
             }

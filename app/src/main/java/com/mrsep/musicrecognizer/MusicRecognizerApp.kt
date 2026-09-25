@@ -18,6 +18,7 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import com.mrsep.musicrecognizer.core.audio.audiorecord.encoder.AudioRecordingDataSource
 import com.mrsep.musicrecognizer.core.common.di.ApplicationScope
+import com.mrsep.musicrecognizer.feature.backup.RestoreStaging
 import com.mrsep.musicrecognizer.feature.recognition.service.RecognitionControlActivity
 import com.mrsep.musicrecognizer.feature.recognition.service.ResultNotificationHelper
 import com.mrsep.musicrecognizer.feature.recognition.service.ServiceNotificationHelper
@@ -57,6 +58,7 @@ class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configur
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
         if (ACRA.isACRASenderServiceProcess()) return
+        RestoreStaging.recoverIfNeeded(this)
         if (!BuildConfig.DEBUG) setupAcra()
     }
 

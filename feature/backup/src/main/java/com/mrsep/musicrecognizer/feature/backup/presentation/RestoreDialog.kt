@@ -28,6 +28,7 @@ import com.mrsep.musicrecognizer.feature.backup.BackupEntry
 import com.mrsep.musicrecognizer.feature.backup.BackupMetadataResult
 import com.mrsep.musicrecognizer.feature.backup.RestoreResult
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 import com.mrsep.musicrecognizer.core.strings.R as StringsR
 
 @Composable
@@ -43,7 +44,7 @@ internal fun RestoreDialog(
     var restoreConfirmed by remember { mutableStateOf(false) }
     LaunchedEffect(restoreConfirmed) {
         if (restoreConfirmed) {
-            delay(3000)
+            delay(3.seconds)
             restoreConfirmed = false
         }
     }
@@ -118,8 +119,8 @@ internal fun RestoreDialog(
                                 text = stringResource(StringsR.string.restore_result_not_backup)
                             )
 
-                            BackupMetadataResult.UnhandledError -> Text(
-                                text = stringResource(StringsR.string.backup_restore_unhandled_error)
+                            is BackupMetadataResult.UnhandledError -> Text(
+                                text = unhandledErrorMessage(restoreState.metadata.message)
                             )
                         }
                     }
@@ -129,26 +130,26 @@ internal fun RestoreDialog(
                         subtitle = stringResource(StringsR.string.restore_info_restart)
                     )
 
-                    is RestoreUiState.Result -> when (restoreState.result) {
+                    is RestoreUiState.Result -> when (val result = restoreState.result) {
                         is RestoreResult.Success -> {
-                            if (restoreState.result.appRestartRequired) {
-                                var remaining by remember { mutableIntStateOf(3) }
-                                LaunchedEffect(Unit) {
-                                    while (remaining > 0) {
-                                        delay(1000)
-                                        remaining--
-                                    }
-                                    onAppRestartRequest()
-                                }
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                                ) {
-                                    Text(stringResource(StringsR.string.restore_result_success))
-                                    Text(stringResource(StringsR.string.restore_will_restart_in).format(remaining))
-                                }
+                            if (result.appRestartRequired) {
+                                RestartCountdown(
+                                    message = stringResource(StringsR.string.restore_result_success),
+                                    onAppRestartRequest = onAppRestartRequest,
+                                )
                             } else {
                                 Text(stringResource(StringsR.string.restore_result_success))
+                            }
+                        }
+
+                        is RestoreResult.UnhandledError -> {
+                            if (result.appRestartRequired) {
+                                RestartCountdown(
+                                    message = result.getMessage(),
+                                    onAppRestartRequest = onAppRestartRequest,
+                                )
+                            } else {
+                                Text(text = result.getMessage())
                             }
                         }
 
@@ -156,13 +157,34 @@ internal fun RestoreDialog(
                         RestoreResult.MalformedBackup,
                         RestoreResult.NewerVersionBackup,
                         RestoreResult.NotBackupFile,
-                        RestoreResult.UnhandledError,
-                        -> Text(text = restoreState.result.getMessage())
+                        -> Text(text = result.getMessage())
                     }
                 }
             }
         },
     )
+}
+
+@Composable
+private fun RestartCountdown(
+    message: String,
+    onAppRestartRequest: () -> Unit,
+) {
+    var remaining by remember { mutableIntStateOf(3) }
+    LaunchedEffect(Unit) {
+        while (remaining > 0) {
+            delay(1.seconds)
+            remaining--
+        }
+        onAppRestartRequest()
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(message)
+        Text(stringResource(StringsR.string.restore_will_restart_in).format(remaining))
+    }
 }
 
 @Composable
@@ -183,6 +205,5 @@ private fun RestoreResult.getMessage() = when (this) {
     RestoreResult.MalformedBackup -> stringResource(StringsR.string.restore_result_malformed_backup)
     RestoreResult.NewerVersionBackup -> stringResource(StringsR.string.restore_result_newer_version)
     RestoreResult.NotBackupFile -> stringResource(StringsR.string.restore_result_not_backup)
-    RestoreResult.UnhandledError -> stringResource(StringsR.string.backup_restore_unhandled_error) +
-            "\n" + stringResource(StringsR.string.backup_restore_unhandled_error_message)
+    is RestoreResult.UnhandledError -> unhandledErrorMessage(message)
 }

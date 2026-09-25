@@ -2,6 +2,7 @@ package com.mrsep.musicrecognizer.core.data.track
 
 import com.mrsep.musicrecognizer.core.common.di.ApplicationScope
 import com.mrsep.musicrecognizer.core.common.di.IoDispatcher
+import com.mrsep.musicrecognizer.core.data.PersistentStoreLock
 import com.mrsep.musicrecognizer.core.database.ApplicationDatabase
 import com.mrsep.musicrecognizer.core.database.track.TrackEntity
 import com.mrsep.musicrecognizer.core.database.track.TrackPreviewTuple
@@ -29,6 +30,7 @@ internal class TrackRepositoryImpl @Inject constructor(
     @ApplicationScope private val appScope: CoroutineScope,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val lyricsFetcher: LyricsFetcher,
+    private val storeLock: PersistentStoreLock,
     database: ApplicationDatabase
 ) : TrackRepository {
 
@@ -36,13 +38,13 @@ internal class TrackRepositoryImpl @Inject constructor(
     private val persistentCoroutineContext = appScope.coroutineContext + ioDispatcher
 
     override suspend fun upsertKeepProperties(tracks: List<Track>): List<Track> {
-        return withContext(persistentCoroutineContext) {
+        return withStoreWrite {
             trackDao.upsertKeepProperties(tracks.map(Track::toEntity)).map(TrackEntity::toDomain)
         }
     }
 
     override suspend fun updateTransform(trackId: String, transform: (previous: Track) -> Track) {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             trackDao.updateTransform(trackId) { trackEntity ->
                 transform(trackEntity.toDomain()).toEntity()
             }
@@ -50,31 +52,31 @@ internal class TrackRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setFavorite(trackId: String, isFavorite: Boolean) {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             trackDao.setFavorite(trackId, isFavorite)
         }
     }
 
     override suspend fun setViewed(trackId: String, isViewed: Boolean) {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             trackDao.setViewed(trackId, isViewed)
         }
     }
 
     override suspend fun setThemeSeedColor(trackId: String, color: Int?) {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             trackDao.setThemeSeedColor(trackId, color)
         }
     }
 
     override suspend fun delete(trackIds: List<String>) {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             trackDao.delete(trackIds)
         }
     }
 
     override suspend fun deleteAll() {
-        withContext(persistentCoroutineContext) {
+        withStoreWrite {
             trackDao.deleteAll()
         }
     }
@@ -142,15 +144,22 @@ internal class TrackRepositoryImpl @Inject constructor(
         when (val result = lyricsFetcher.fetch(track)) {
             is NetworkResult.Success -> {
                 result.data?.let { lyrics ->
-                    trackDao.setLyrics(
-                        trackId,
-                        lyrics = lyrics.toDbLyricsData(),
-                        isSynced = lyrics is SyncedLyrics
-                    )
+                    withStoreWrite {
+                        trackDao.setLyrics(
+                            trackId,
+                            lyrics = lyrics.toDbLyricsData(),
+                            isSynced = lyrics is SyncedLyrics
+                        )
+                    }
                 }
                 NetworkResult.Success(Unit)
             }
             is NetworkError -> result
         }
     }
+
+    private suspend fun <T> withStoreWrite(block: suspend () -> T): T =
+        withContext(persistentCoroutineContext) {
+            storeLock.withShared(block)
+        }
 }

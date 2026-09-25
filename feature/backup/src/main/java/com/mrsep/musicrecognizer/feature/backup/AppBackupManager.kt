@@ -38,7 +38,7 @@ internal sealed class BackupResult {
     data object Success : BackupResult()
 
     data object FileNotFound : BackupResult()
-    data object UnhandledError : BackupResult()
+    data class UnhandledError(val message: String? = null) : BackupResult()
 }
 
 internal sealed class BackupMetadataResult {
@@ -51,7 +51,7 @@ internal sealed class BackupMetadataResult {
     data object MalformedBackup : BackupMetadataResult()
 
     data object FileNotFound : BackupMetadataResult()
-    data object UnhandledError : BackupMetadataResult()
+    data class UnhandledError(val message: String? = null) : BackupMetadataResult()
 }
 
 internal sealed class RestoreResult {
@@ -63,5 +63,8 @@ internal sealed class RestoreResult {
     data object MalformedBackup : RestoreResult()
 
     data object FileNotFound : RestoreResult()
-    data object UnhandledError : RestoreResult()
+    data class UnhandledError(
+        val appRestartRequired: Boolean = false,
+        val message: String? = null,
+    ) : RestoreResult()
 }

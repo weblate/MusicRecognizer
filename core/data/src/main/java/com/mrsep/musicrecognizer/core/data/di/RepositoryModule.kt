@@ -1,11 +1,13 @@
 package com.mrsep.musicrecognizer.core.data.di
 
 import com.mrsep.musicrecognizer.core.data.ConnectivityManagerNetworkMonitor
+import com.mrsep.musicrecognizer.core.data.PersistentStoreLock
 import com.mrsep.musicrecognizer.core.data.enqueued.EnqueuedRecognitionRepositoryImpl
 import com.mrsep.musicrecognizer.core.data.enqueued.AudioSampleDataSource
 import com.mrsep.musicrecognizer.core.data.enqueued.AudioSampleDataSourceImpl
 import com.mrsep.musicrecognizer.core.data.preferences.PreferencesRepositoryImpl
 import com.mrsep.musicrecognizer.core.data.track.TrackRepositoryImpl
+import com.mrsep.musicrecognizer.core.domain.maintenance.DataMaintenance
 import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
 import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionRepository
 import com.mrsep.musicrecognizer.core.domain.track.TrackRepository
@@ -41,4 +43,8 @@ internal interface RepositoryModule {
     @Binds
     @Singleton
     fun bindNetworkMonitor(impl: ConnectivityManagerNetworkMonitor): NetworkMonitor
+
+    @Binds
+    @Singleton
+    fun bindDataMaintenance(impl: PersistentStoreLock): DataMaintenance
 }

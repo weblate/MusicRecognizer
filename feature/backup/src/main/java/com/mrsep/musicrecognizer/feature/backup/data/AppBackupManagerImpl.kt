@@ -5,20 +5,25 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.util.Log
 import androidx.datastore.core.DataStore
-import androidx.datastore.dataStoreFile
+import androidx.work.WorkManager
 import coil3.imageLoader
-import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto
 import com.mrsep.musicrecognizer.core.common.di.ApplicationScope
 import com.mrsep.musicrecognizer.core.common.di.IoDispatcher
 import com.mrsep.musicrecognizer.core.common.util.getAppVersionCode
+import com.mrsep.musicrecognizer.core.data.PersistentStoreLock
 import com.mrsep.musicrecognizer.core.data.enqueued.AudioSampleDataSource
 import com.mrsep.musicrecognizer.core.database.ApplicationDatabase
-import com.mrsep.musicrecognizer.core.datastore.USER_PREFERENCES_STORE
+import com.mrsep.musicrecognizer.core.database.ApplicationDatabase.Companion.DATABASE_NAME
+import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto
+import com.mrsep.musicrecognizer.core.domain.maintenance.DataMaintenanceOperation
+import com.mrsep.musicrecognizer.core.domain.recognition.RecognitionInteractor
+import com.mrsep.musicrecognizer.core.domain.recognition.model.RecognitionStatus
 import com.mrsep.musicrecognizer.feature.backup.AppBackupManager
 import com.mrsep.musicrecognizer.feature.backup.BackupEntry
 import com.mrsep.musicrecognizer.feature.backup.BackupMetadata
 import com.mrsep.musicrecognizer.feature.backup.BackupMetadataResult
 import com.mrsep.musicrecognizer.feature.backup.BackupResult
+import com.mrsep.musicrecognizer.feature.backup.RestoreStaging
 import com.mrsep.musicrecognizer.feature.backup.RestoreResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -28,8 +33,10 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
+import androidx.work.await
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.time.Instant
@@ -39,10 +46,14 @@ import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import kotlin.io.path.exists
 
+private const val TAG = "AppBackupManagerImpl"
+
 internal class AppBackupManagerImpl @Inject constructor(
     private val database: ApplicationDatabase,
     private val audioSampleDataSource: AudioSampleDataSource,
     private val userPreferencesDataStore: DataStore<UserPreferencesProto>,
+    private val storeLock: PersistentStoreLock,
+    private val recognitionInteractor: RecognitionInteractor,
     @ApplicationContext private val appContext: Context,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     @ApplicationScope private val appScope: CoroutineScope,
@@ -68,30 +79,35 @@ internal class AppBackupManagerImpl @Inject constructor(
         entries: Set<BackupEntry>,
     ): BackupResult = withContext(ioDispatcher) {
         check(entries.isNotEmpty()) { "At least one BackupEntry must be provided" }
+        val outputStream = try {
+            requireNotNull(appContext.contentResolver.openOutputStream(destination))
+        } catch (_: Exception) {
+            return@withContext BackupResult.FileNotFound
+        }
         try {
-            val outputStream = try {
-                requireNotNull(appContext.contentResolver.openOutputStream(destination))
-            } catch (_: Exception) {
-                return@withContext BackupResult.FileNotFound
-            }
-            ZipOutputStream(outputStream.buffered()).use { zipInputStream ->
-                writeMetadata(zipInputStream, entries.toSet())
-                if (entries.contains(BackupEntry.Data)) {
-                    exportDatabase(zipInputStream)
-                    exportRecordings(zipInputStream)
+            outputStream.buffered().use { buffered ->
+                stopOngoingRecognition()
+                storeLock.withExclusive(DataMaintenanceOperation.Backup) {
+                    ZipOutputStream(buffered).use { zipOutputStream ->
+                        writeMetadata(zipOutputStream, entries.toSet())
+                        if (entries.contains(BackupEntry.Data)) {
+                            exportDatabase(zipOutputStream)
+                            exportRecordings(zipOutputStream)
+                        }
+                        if (entries.contains(BackupEntry.Preferences)) {
+                            exportUserPreferences(zipOutputStream)
+                        }
+                    }
+                    BackupResult.Success
                 }
-                if (entries.contains(BackupEntry.Preferences)) {
-                    exportUserPreferences(zipInputStream)
-                }
             }
-            BackupResult.Success
         } catch (e: CancellationException) {
             deleteUnfinishedBackup(destination)
             throw e
         } catch (e: Exception) { // potential ZipException or IOException
-            Log.e(this::class.simpleName, "Fatal error while creating backup", e)
+            Log.e(TAG, "Fatal error while creating backup", e)
             deleteUnfinishedBackup(destination)
-            BackupResult.UnhandledError
+            BackupResult.UnhandledError(message = e.message)
         }
     }
 
@@ -99,13 +115,13 @@ internal class AppBackupManagerImpl @Inject constructor(
         try {
             DocumentsContract.deleteDocument(appContext.contentResolver, uri)
         } catch (e: Exception) {
-            Log.e(this::class.simpleName, "Failed to delete unfinished backup file", e)
+            Log.e(TAG, "Failed to delete unfinished backup file", e)
         }
     }
 
     private suspend fun exportDatabase(zipOutputStream: ZipOutputStream) {
         currentCoroutineContext().ensureActive()
-        val appDatabasePath = appContext.getDatabasePath(database.openHelper.databaseName).toPath()
+        val appDatabasePath = appContext.getDatabasePath(DATABASE_NAME).toPath()
         check(appDatabasePath.exists()) { "App database file is not found" }
         check(database.checkoutWithRetry()) { "DB checkpoint was not performed, database is busy" }
         with(zipOutputStream) {
@@ -119,6 +135,7 @@ internal class AppBackupManagerImpl @Inject constructor(
         val recordings = audioSampleDataSource.getFiles()
         with(zipOutputStream) {
             for (recording in recordings) {
+                if (!recording.isFile) continue
                 currentCoroutineContext().ensureActive()
                 putNextEntry(ZipEntry("$RECORDINGS_DIR_ZIP_ENTRY${recording.name}"))
                 Files.copy(recording.toPath(), this)
@@ -193,8 +210,8 @@ internal class AppBackupManagerImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(this::class.simpleName, "Fatal error while reading backup metadata", e)
-            BackupMetadataResult.UnhandledError
+            Log.e(TAG, "Fatal error while reading backup metadata", e)
+            BackupMetadataResult.UnhandledError(message = e.message)
         }
     }
 
@@ -208,12 +225,13 @@ internal class AppBackupManagerImpl @Inject constructor(
         } catch (_: Exception) {
             return@withContext RestoreResult.FileNotFound
         }
+        var inProgressMarked = false
         try {
             ZipInputStream(inputStream).use { zipInputStream ->
                 var metadata: BackupMetadata? = null
-                var currentEntry: ZipEntry? = zipInputStream.nextEntry
                 // The first entry must be backup metadata
-                if (currentEntry?.name == METADATA_ZIP_ENTRY) {
+                val metadataEntry = zipInputStream.nextEntry
+                if (metadataEntry?.name == METADATA_ZIP_ENTRY) {
                     metadata = readMetadata(zipInputStream)
                 }
                 if (metadata == null) return@withContext RestoreResult.NotBackupFile
@@ -222,72 +240,74 @@ internal class AppBackupManagerImpl @Inject constructor(
                 }
                 zipInputStream.closeEntry()
 
-                var appDataDeleted = false
-                currentEntry = zipInputStream.nextEntry
-                while (currentEntry != null) {
-                    ensureActive()
-                    when (currentEntry.name) {
-                        DATABASE_ZIP_ENTRY -> if (entries.contains(BackupEntry.Data)) {
-                            deleteAppData()
-                            appDataDeleted = true
-                            importDatabase(zipInputStream)
-                        }
+                stopOngoingRecognition()
+                cancelAndPruneBackgroundWork()
 
-                        RECORDINGS_DIR_ZIP_ENTRY -> {} // just skip
+                storeLock.withExclusive(DataMaintenanceOperation.Restore) {
+                    RestoreStaging.markInProgress(appContext, entries)
+                    inProgressMarked = true
 
-                        PREFERENCES_ZIP_ENTRY -> if (entries.contains(BackupEntry.Preferences)) {
-                            importPreferences(zipInputStream)
-                        }
+                    if (BackupEntry.Data in entries) {
+                        clearAppData()
+                    }
 
-                        else -> {
-                            val recordingName = findRecordingName(currentEntry)
-                            if (recordingName != null) {
-                                if (entries.contains(BackupEntry.Data) && appDataDeleted) {
-                                    importRecording(zipInputStream, recordingName)
+                    var databaseStaged = false
+                    while (true) {
+                        val entry = zipInputStream.nextEntry ?: break
+                        currentCoroutineContext().ensureActive()
+                        when (entry.name) {
+                            DATABASE_ZIP_ENTRY -> if (entries.contains(BackupEntry.Data)) {
+                                importDatabaseToStaging(zipInputStream)
+                                databaseStaged = true
+                            }
+
+                            RECORDINGS_DIR_ZIP_ENTRY -> {} // just skip
+
+                            PREFERENCES_ZIP_ENTRY -> if (entries.contains(BackupEntry.Preferences)) {
+                                importPreferencesToStaging(zipInputStream)
+                            }
+
+                            else -> {
+                                val recordingName = findRecordingName(entry)
+                                if (recordingName != null) {
+                                    if (entries.contains(BackupEntry.Data) && databaseStaged) {
+                                        importRecordingToStaging(zipInputStream, recordingName)
+                                    }
+                                } else {
+                                    val msg = "Unknown backup entry \"${entry.name}\""
+                                    Log.w(TAG, msg)
                                 }
-                            } else {
-                                val msg = "Unknown backup entry \"${currentEntry.name}\""
-                                Log.w(this::class.simpleName, msg)
                             }
                         }
+                        zipInputStream.closeEntry()
                     }
-                    zipInputStream.closeEntry()
-                    currentEntry = zipInputStream.nextEntry
+                    withContext(NonCancellable) {
+                        RestoreStaging.markReady(appContext)
+                    }
                 }
             }
             RestoreResult.Success(appRestartRequired = true)
         } catch (e: CancellationException) {
-            cleanOnRestoreError()
             throw e
         } catch (e: Exception) {
-            Log.e(this::class.simpleName, "Fatal error while restoring data from backup", e)
-            cleanOnRestoreError()
-            RestoreResult.UnhandledError
+            Log.e(TAG, "Fatal error while restoring data from backup", e)
+            RestoreResult.UnhandledError(appRestartRequired = inProgressMarked, message = e.message)
         }
     }
 
-    private fun importDatabase(zipInputStream: ZipInputStream) {
-        val databasePath = appContext.getDatabasePath(database.openHelper.databaseName).toPath()
-        database.close()
-        appContext.deleteDatabase(database.openHelper.databaseName)
-        Files.createDirectories(databasePath.parent)
-        Files.copy(zipInputStream, databasePath, StandardCopyOption.REPLACE_EXISTING)
+    private suspend fun stopOngoingRecognition() {
+        if (recognitionInteractor.status.value is RecognitionStatus.Recognizing) {
+            recognitionInteractor.cancelAndJoin()
+        }
     }
 
-    private suspend fun importRecording(zipInputStream: ZipInputStream, filename: String) {
-        audioSampleDataSource.import(zipInputStream, filename)
+    private suspend fun cancelAndPruneBackgroundWork() {
+        val workManager = WorkManager.getInstance(appContext)
+        workManager.cancelAllWork().await()
+        workManager.pruneWork().await()
     }
 
-    private fun importPreferences(zipInputStream: ZipInputStream) {
-        val preferencesPath = appContext.dataStoreFile(USER_PREFERENCES_STORE).toPath()
-        Files.deleteIfExists(preferencesPath)
-        Files.createDirectories(preferencesPath.parent)
-        Files.copy(zipInputStream, preferencesPath, StandardCopyOption.REPLACE_EXISTING)
-    }
-
-    private suspend fun deleteAppData() {
-        // If we delete only rows, Room will inform all background workers about data deletion,
-        // and they will cancel themselves. Bad contract?
+    private suspend fun clearAppData() {
         database.clearAllTables()
         audioSampleDataSource.deleteAll()
         with(appContext.imageLoader) {
@@ -296,10 +316,26 @@ internal class AppBackupManagerImpl @Inject constructor(
         }
     }
 
-    private suspend fun cleanOnRestoreError() {
-        withContext(NonCancellable) {
-            deleteAppData()
-        }
+    private fun importDatabaseToStaging(zipInputStream: ZipInputStream) {
+        val databasePath = RestoreStaging.stagingDatabaseFile(appContext).toPath()
+        Files.createDirectories(databasePath.parent)
+        Files.copy(zipInputStream, databasePath, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    private fun importRecordingToStaging(zipInputStream: ZipInputStream, filename: String) {
+        val targetDir = RestoreStaging.stagingRecordingsDir(appContext)
+        targetDir.mkdirs()
+        Files.copy(
+            zipInputStream,
+            File(targetDir, filename).toPath(),
+            StandardCopyOption.REPLACE_EXISTING
+        )
+    }
+
+    private fun importPreferencesToStaging(zipInputStream: ZipInputStream) {
+        val preferencesPath = RestoreStaging.stagingPreferencesFile(appContext).toPath()
+        Files.createDirectories(preferencesPath.parent)
+        Files.copy(zipInputStream, preferencesPath, StandardCopyOption.REPLACE_EXISTING)
     }
 
     private fun writeMetadata(zipOutputStream: ZipOutputStream, entries: Set<BackupEntry>) {

@@ -17,9 +17,11 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.time.Instant
 import java.util.UUID
-import java.util.zip.ZipInputStream
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+
+private const val SAMPLES_DIR = "audio_samples"
+private const val SAMPLES_DIR_LEGACY = "enqueued_records"
 
 internal class AudioSampleDataSourceImpl @Inject constructor(
     @ApplicationContext private val appContext: Context,
@@ -53,26 +55,6 @@ internal class AudioSampleDataSourceImpl @Inject constructor(
         } catch (e: IOException) {
             Log.e(this::class.simpleName, "Failed to write sample file ($sampleName)", e)
             persistentSample.file.delete()
-            null
-        }
-    }
-
-    override suspend fun import(inputStream: ZipInputStream, filename: String): File? {
-        return try {
-            withContext(ioDispatcher) {
-                val resultFile = when (filename.substringAfterLast('.', "")) {
-                    "m4a" -> samplesDir.resolve(filename)
-                    else -> {
-                        val samplesDirLegacy = File(appContext.filesDir, SAMPLES_DIR_LEGACY)
-                            .apply { if (!exists()) mkdirs() }
-                        samplesDirLegacy.resolve(filename)
-                    }
-                }
-                Files.copy(inputStream, resultFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                resultFile
-            }
-        } catch (e: IOException) {
-            Log.e(this::class.simpleName, "Failed to import sample file ($filename)", e)
             null
         }
     }
@@ -122,7 +104,7 @@ internal class AudioSampleDataSourceImpl @Inject constructor(
                 Log.e(this::class.simpleName, "Failed to delete sample file ${file.path}", e)
             }
             numTries++
-            delay(500L)
+            delay(500.milliseconds)
         }
         false
     }
@@ -151,9 +133,38 @@ internal class AudioSampleDataSourceImpl @Inject constructor(
         "" -> "audio/aac" // Legacy sample format
         else -> error("Unexpected file extension")
     }
+}
 
-    companion object {
-        private const val SAMPLES_DIR = "audio_samples"
-        private const val SAMPLES_DIR_LEGACY = "enqueued_records"
+/**
+ * Restore staging audio samples from [android.app.Application.attachBaseContext]
+ * before the datasource singleton exists.
+ */
+object AudioSampleFiles {
+
+    fun deleteAll(context: Context) {
+        File(context.filesDir, SAMPLES_DIR).deleteRecursively()
+        File(context.filesDir, SAMPLES_DIR_LEGACY).deleteRecursively()
+    }
+
+    fun restoreFrom(context: Context, recordingsDir: File) {
+        if (!recordingsDir.exists()) return
+        recordingsDir.listFiles()?.forEach { file ->
+            if (!file.isFile) return@forEach
+            val destDir = destDirFor(context, file.name).apply { mkdirs() }
+            val dest = File(destDir, file.name)
+            if (dest.exists()) dest.delete()
+            if (!file.renameTo(dest)) {
+                file.copyTo(dest, overwrite = true)
+                file.delete()
+            }
+        }
+    }
+
+    private fun destDirFor(context: Context, filename: String): File {
+        val dirName = when (filename.substringAfterLast('.', "")) {
+            "m4a" -> SAMPLES_DIR
+            else -> SAMPLES_DIR_LEGACY
+        }
+        return File(context.filesDir, dirName)
     }
 }

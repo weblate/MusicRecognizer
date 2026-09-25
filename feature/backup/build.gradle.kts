@@ -19,4 +19,5 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.csv)
     implementation(libs.reorderable)
+    implementation(libs.androidx.workKtx)
 }

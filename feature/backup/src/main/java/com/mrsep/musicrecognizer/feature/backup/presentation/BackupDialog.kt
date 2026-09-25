@@ -74,7 +74,7 @@ internal fun BackupDialog(
                     }
 
                     BackupResult.FileNotFound,
-                    BackupResult.UnhandledError -> {}
+                    is BackupResult.UnhandledError -> {}
                 }
             }
         },
@@ -149,8 +149,14 @@ internal fun BackupEntryPicker(
 private fun BackupResult.getMessage() = when (this) {
     BackupResult.Success -> stringResource(StringsR.string.backup_result_success)
     BackupResult.FileNotFound -> stringResource(StringsR.string.backup_restore_result_file_not_found)
-    BackupResult.UnhandledError -> stringResource(StringsR.string.backup_restore_unhandled_error) +
+    is BackupResult.UnhandledError -> unhandledErrorMessage(message)
+}
+
+@Composable
+internal fun unhandledErrorMessage(details: String?): String {
+    val base = stringResource(StringsR.string.backup_restore_unhandled_error) +
             "\n" + stringResource(StringsR.string.backup_restore_unhandled_error_message)
+    return if (details.isNullOrBlank()) base else "$base\n$details"
 }
 
 @Composable

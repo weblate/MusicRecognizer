@@ -3,6 +3,7 @@ package com.mrsep.musicrecognizer.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.mrsep.musicrecognizer.core.database.ApplicationDatabase
+import com.mrsep.musicrecognizer.core.database.ApplicationDatabase.Companion.DATABASE_NAME
 import com.mrsep.musicrecognizer.core.database.migration.*
 import dagger.Module
 import dagger.Provides
@@ -10,8 +11,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-
-private const val DATABASE_NAME = "application_database"
 
 @Module
 @InstallIn(SingletonComponent::class)

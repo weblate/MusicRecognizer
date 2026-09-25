@@ -7,6 +7,7 @@ import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto.getDefaultI
 import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProtoKt
 import com.mrsep.musicrecognizer.core.datastore.copy
 import com.mrsep.musicrecognizer.core.common.di.IoDispatcher
+import com.mrsep.musicrecognizer.core.data.PersistentStoreLock
 import com.mrsep.musicrecognizer.core.domain.preferences.AcrCloudConfig
 import com.mrsep.musicrecognizer.core.domain.preferences.AuddConfig
 import com.mrsep.musicrecognizer.core.domain.preferences.AudioCaptureMode
@@ -33,6 +34,7 @@ private const val TAG = "PreferencesRepositoryImpl"
 internal class PreferencesRepositoryImpl @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val dataStore: DataStore<UserPreferencesProto>,
+    private val storeLock: PersistentStoreLock,
 ) : PreferencesRepository {
 
     override val userPreferencesFlow: Flow<UserPreferences> = dataStore.data
@@ -159,15 +161,17 @@ internal class PreferencesRepositoryImpl @Inject constructor(
     private suspend inline fun safeWriter(
         crossinline action: UserPreferencesProtoKt.Dsl.() -> Unit
     ) {
-        withContext(ioDispatcher) {
-            try {
-                dataStore.updateData { currentPreferences ->
-                    currentPreferences.copy {
-                        action()
+        storeLock.withShared {
+            withContext(ioDispatcher) {
+                try {
+                    dataStore.updateData { currentPreferences ->
+                        currentPreferences.copy {
+                            action()
+                        }
                     }
+                } catch (e: IOException) {
+                    Log.e(TAG, "Failed to update user preferences", e)
                 }
-            } catch (e: IOException) {
-                Log.e(TAG, "Failed to update user preferences", e)
             }
         }
     }
