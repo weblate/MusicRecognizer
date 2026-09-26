@@ -212,8 +212,10 @@ internal class TrackLinksFetchWorker @AssistedInject constructor(
         private fun Data.getTrackId() = getString(INPUT_KEY_TRACK_ID)
             ?: error("$TAG requires track ID as parameter")
 
-        private fun Data.getAllowedSources() = getStringArray(INPUT_KEY_ALLOWED_SOURCES)
-            ?.mapNotNull { runCatching { TrackLinksSource.valueOf(it) }.getOrNull() }
+        private fun Data.getAllowedSources() = getNullableStringArray(INPUT_KEY_ALLOWED_SOURCES)
+            ?.mapNotNull { source ->
+                source?.let { runCatching { TrackLinksSource.valueOf(source) }.getOrNull() }
+            }
             ?.toSet()
             ?: error("$TAG requires set of allowed sources as parameter")
     }
