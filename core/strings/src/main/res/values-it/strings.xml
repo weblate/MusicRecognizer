@@ -29,7 +29,7 @@
     <string name="edit">Modifica</string>
     <string name="clear_text_field">Cancella</string>
     <string name="text_field_must_not_be_empty">Non lasciare vuoto</string>
-    <string name="cannot_share_toast">Impossibile trovare un\'applicazione per condividere</string>
+    <string name="cannot_share_toast">Impossibile trovare un\'applicazione per condividere questo</string>
     <string name="show_more">Mostra altro</string>
     <string name="permissions">Autorizzazioni</string>
     <string name="request_permission">Ricorda autorizzazione</string>
@@ -57,7 +57,7 @@
     <string name="result_title_internal_error">Errore interno</string>
     <string name="result_message_internal_error">Si è verificato un errore interno</string>
     <string name="result_title_unknown_error">Errore sconosciuto</string>
-    <string name="library">Libreria</string>
+    <string name="library">Raccolta</string>
     <string name="empty_library_title">Nessuna canzone riconosciuta</string>
     <string name="empty_library_subtitle">I brani riconosciuti di recente e quelli preferiti verranno visualizzati qui</string>
     <string name="library_menu_mark_all_tracks_as_viewed">Segna tutti come visti</string>
@@ -321,4 +321,12 @@
     <string name="export_csv_result_success">File CSV creato con successo!</string>
     <string name="track_info_title_format_isrc">%s:</string>
     <string name="notification_title_match_found">Corrispondenza trovata!</string>
+    <string name="app_shortcut_show_floating_button_short">Pulsante</string>
+    <string name="qr_code">Codice QR</string>
+    <string name="file_manager_not_found_toast">Impossibile trovare il gestitore di file</string>
+    <string name="reorder">Riordina</string>
+    <string name="button_retry_recognition_hint">Tieni per riprovare il riconoscimento</string>
+    <string name="result_title_no_sound_detected">Nessun suono rilevato</string>
+    <string name="result_message_no_sound_detected_microphone">Si prega di assicurarsi che la musica stia suonando abbastanza forte nelle vicinanze, poi riprovare</string>
+    <string name="result_message_no_sound_detected_device">Si prega di assicurarsi che la musica stia giocando sul dispositivo, poi riprovare</string>
 </resources>

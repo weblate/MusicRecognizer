@@ -354,4 +354,9 @@
     <string name="result_message_no_sound_detected_microphone">Por favor, certifique-se de que a música está tocando alto o suficiente nas proximidades e tente novamente</string>
     <string name="result_title_no_sound_detected">Nenhum som detectado</string>
     <string name="reorder">Reordenar</string>
+    <plurals name="items_selected">
+        <item quantity="one">%d selecionado</item>
+        <item quantity="many">%d selecionados</item>
+        <item quantity="other">%d selecionados</item>
+    </plurals>
 </resources>
