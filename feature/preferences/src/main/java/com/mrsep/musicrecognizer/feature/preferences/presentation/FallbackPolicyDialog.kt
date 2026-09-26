@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mrsep.musicrecognizer.core.domain.preferences.FallbackAction
 import com.mrsep.musicrecognizer.core.domain.preferences.FallbackPolicy
+import com.mrsep.musicrecognizer.core.ui.components.DialogSwitch
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import com.mrsep.musicrecognizer.core.strings.R as StringsR
@@ -35,6 +36,8 @@ import com.mrsep.musicrecognizer.core.strings.R as StringsR
 internal fun FallbackPolicyDialog(
     fallbackPolicy: FallbackPolicy,
     onFallbackPolicyChanged: (FallbackPolicy) -> Unit,
+    autoDeleteSavedRecordingOnMatch: Boolean,
+    onAutoDeleteSavedRecordingOnMatchChanged: (Boolean) -> Unit,
     onDismissClick: () -> Unit,
 ) {
     AlertDialog(
@@ -79,6 +82,14 @@ internal fun FallbackPolicyDialog(
                         onFallbackPolicyChanged(fallbackPolicy.copy(anotherFailure = option))
                     },
                     modifier = Modifier.padding(top = 16.dp)
+                )
+                DialogSwitch(
+                    title = stringResource(StringsR.string.pref_title_auto_delete_sample_on_match),
+                    checked = autoDeleteSavedRecordingOnMatch,
+                    onClick = {
+                        onAutoDeleteSavedRecordingOnMatchChanged(!autoDeleteSavedRecordingOnMatch)
+                    },
+                    modifier = Modifier.padding(top = 24.dp)
                 )
             }
         },

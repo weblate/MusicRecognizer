@@ -121,6 +121,12 @@ internal class PreferencesViewModel @Inject constructor(
         }
     }
 
+    fun setAutoDeleteSavedRecordingOnMatch(value: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setAutoDeleteSavedRecordingOnMatch(value)
+        }
+    }
+
     fun setHapticFeedback(hapticFeedback: HapticFeedback) {
         viewModelScope.launch {
             preferencesRepository.setHapticFeedback(hapticFeedback)

@@ -20,10 +20,11 @@ import com.mrsep.musicrecognizer.feature.recognition.service.ext.downloadImageTo
 import com.mrsep.musicrecognizer.feature.recognition.service.ext.getCachedImageOrNull
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.withContext
 import java.time.Instant
 
 @HiltWorker
@@ -38,118 +39,113 @@ internal class EnqueuedRecognitionWorker @AssistedInject constructor(
     private val trackMetadataFetchManager: TrackMetadataFetchManager,
 ) : CoroutineWorker(appContext, workerParams) {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun doWork(): Result {
         Log.d(TAG, "$TAG started with attempt #$runAttemptCount")
         val forceLaunch = inputData.getBoolean(INPUT_KEY_FORCE_LAUNCH, true)
         val recognitionId = inputData.getInt(INPUT_KEY_ENQUEUED_RECOGNITION_ID, -1)
         check(recognitionId != -1) { "$TAG requires enqueued recognition id as parameter" }
 
-        return enqueuedRecognitionRepository
-            .getRecognitionFlow(recognitionId)
-            .distinctUntilChangedBy { recognition -> recognition?.id }
-            .mapLatest { enqueuedRecognition ->
-                // Null means that recognition was not found or was deleted in process
-                if (enqueuedRecognition == null) {
-                    return@mapLatest Result.failure()
-                }
-                clearPreviousResult(enqueuedRecognition)
-                val userPreferences = preferencesRepository.userPreferencesFlow.first()
+        val enqueuedRecognition = enqueuedRecognitionRepository.getRecognitionFlow(recognitionId).first()
+            ?: return Result.failure()
+        clearPreviousResult(enqueuedRecognition)
+        val userPreferences = preferencesRepository.userPreferencesFlow.first()
 
-                val serviceConfig = when (userPreferences.currentRecognitionProvider) {
-                    RecognitionProvider.Audd -> userPreferences.auddConfig
-                    RecognitionProvider.AcrCloud -> userPreferences.acrCloudConfig
-                    RecognitionProvider.Shazam -> ShazamConfig
+        val serviceConfig = when (userPreferences.currentRecognitionProvider) {
+            RecognitionProvider.Audd -> userPreferences.auddConfig
+            RecognitionProvider.AcrCloud -> userPreferences.acrCloudConfig
+            RecognitionProvider.Shazam -> ShazamConfig
+        }
+        val recognitionService = recognitionServiceFactory.getService(serviceConfig)
+        val sample = enqueuedRecognitionRepository.getAudioSample(enqueuedRecognition.id)
+        if (sample == null) {
+            val updatedEnqueued = enqueuedRecognition.copy(
+                result = RemoteRecognitionResult.Error.BadRecording(
+                    "Failed to read audio sample file"
+                ),
+                resultDate = Instant.now()
+            )
+            enqueuedRecognitionRepository.update(updatedEnqueued)
+            return Result.failure()
+        }
+        val result = recognitionService.recognize(sample)
+
+        suspend fun handleRetryOnAttempt(): Result {
+            return if (forceLaunch || runAttemptCount >= MAX_ATTEMPTS) {
+                val log = "$TAG canceled, forceLaunch=$forceLaunch, " +
+                        "attempt=$runAttemptCount, maxAttempts=$MAX_ATTEMPTS"
+                Log.w(TAG, log)
+                enqueuedRecognitionRepository.update(
+                    enqueuedRecognition.copy(result = result, resultDate = Instant.now())
+                )
+                Result.failure()
+            } else {
+                Result.retry()
+            }
+        }
+        return when (result) {
+            is RemoteRecognitionResult.Success -> {
+                val trackWithStoredProps = trackRepository
+                    .upsertKeepProperties(listOf(result.track))
+                    .first()
+                trackRepository.setViewed(trackWithStoredProps.id, false)
+                val updatedTrack = trackWithStoredProps.copy(
+                    properties = trackWithStoredProps.properties.copy(isViewed = false)
+                )
+                val updatedResult = result.copy(track = updatedTrack)
+                val updatedEnqueued = enqueuedRecognition.copy(
+                    result = updatedResult,
+                    resultDate = Instant.now()
+                )
+                enqueuedRecognitionRepository.update(updatedEnqueued)
+                val latestPreferences = preferencesRepository.userPreferencesFlow.first()
+                val shouldSearchForLinks = latestPreferences
+                    .requiredMusicServices.any { it !in updatedTrack.trackLinks }
+                if (shouldSearchForLinks) {
+                    trackMetadataFetchManager.enqueueTrackLinksFetcher(updatedTrack.id)
                 }
-                val recognitionService = recognitionServiceFactory.getService(serviceConfig)
-                val sample = enqueuedRecognitionRepository.getAudioSample(enqueuedRecognition.id)
-                if (sample == null) {
-                    val updatedEnqueued = enqueuedRecognition.copy(
-                        result = RemoteRecognitionResult.Error.BadRecording(
-                            "Failed to read audio sample file"
-                        ),
-                        resultDate = Instant.now()
+                if (updatedTrack.lyrics == null) {
+                    trackMetadataFetchManager.enqueueLyricsFetcher(updatedTrack.id)
+                }
+                prepareTrackImages(updatedTrack)
+                resultNotificationHelper.notifyResult(updatedEnqueued)
+                if (latestPreferences.autoDeleteSavedRecordingOnMatch) {
+                    enqueuedRecognitionRepository.delete(listOf(enqueuedRecognition.id))
+                }
+                Result.success()
+            }
+
+            RemoteRecognitionResult.NoSoundDetected,
+            is RemoteRecognitionResult.NoMatches -> {
+                enqueuedRecognitionRepository.update(
+                    enqueuedRecognition.copy(result = result, resultDate = Instant.now())
+                )
+                Result.success()
+            }
+
+            RemoteRecognitionResult.Error.BadConnection -> handleRetryOnAttempt()
+
+            is RemoteRecognitionResult.Error.HttpError -> {
+                if (result.code in 400..499) {
+                    enqueuedRecognitionRepository.update(
+                        enqueuedRecognition.copy(result = result, resultDate = Instant.now())
                     )
-                    enqueuedRecognitionRepository.update(updatedEnqueued)
-                    return@mapLatest Result.failure()
-                }
-                val result = recognitionService.recognize(sample)
-
-                suspend fun handleRetryOnAttempt(): Result {
-                    return if (forceLaunch || runAttemptCount >= MAX_ATTEMPTS) {
-                        val log = "$TAG canceled, forceLaunch=$forceLaunch, " +
-                                "attempt=$runAttemptCount, maxAttempts=$MAX_ATTEMPTS"
-                        Log.w(TAG, log)
-                        enqueuedRecognitionRepository.update(
-                            enqueuedRecognition.copy(result = result, resultDate = Instant.now())
-                        )
-                        Result.failure()
-                    } else {
-                        Result.retry()
-                    }
-                }
-                when (result) {
-                    is RemoteRecognitionResult.Success -> {
-                        val trackWithStoredProps = trackRepository
-                            .upsertKeepProperties(listOf(result.track))
-                            .first()
-                        trackRepository.setViewed(trackWithStoredProps.id, false)
-                        val updatedTrack = trackWithStoredProps.copy(
-                            properties = trackWithStoredProps.properties.copy(isViewed = false)
-                        )
-                        val updatedResult = result.copy(track = updatedTrack)
-                        val updatedEnqueued = enqueuedRecognition.copy(
-                            result = updatedResult,
-                            resultDate = Instant.now()
-                        )
-                        enqueuedRecognitionRepository.update(updatedEnqueued)
-                        val shouldSearchForLinks = preferencesRepository.userPreferencesFlow.first()
-                            .requiredMusicServices.any { it !in updatedTrack.trackLinks }
-                        if (shouldSearchForLinks) {
-                            trackMetadataFetchManager.enqueueTrackLinksFetcher(updatedTrack.id)
-                        }
-                        if (updatedTrack.lyrics == null) {
-                            trackMetadataFetchManager.enqueueLyricsFetcher(updatedTrack.id)
-                        }
-                        prepareTrackImages(updatedTrack)
-                        resultNotificationHelper.notifyResult(updatedEnqueued)
-                        Result.success()
-                    }
-
-                    RemoteRecognitionResult.NoSoundDetected,
-                    is RemoteRecognitionResult.NoMatches -> {
-                        enqueuedRecognitionRepository.update(
-                            enqueuedRecognition.copy(result = result, resultDate = Instant.now())
-                        )
-                        Result.success()
-                    }
-
-                    RemoteRecognitionResult.Error.BadConnection -> handleRetryOnAttempt()
-
-                    is RemoteRecognitionResult.Error.HttpError -> {
-                        if (result.code in 400..499) {
-                            enqueuedRecognitionRepository.update(
-                                enqueuedRecognition.copy(result = result, resultDate = Instant.now())
-                            )
-                            Result.failure()
-                        } else {
-                            handleRetryOnAttempt()
-                        }
-                    }
-
-                    is RemoteRecognitionResult.Error.AuthError,
-                    is RemoteRecognitionResult.Error.ApiUsageLimited,
-                    is RemoteRecognitionResult.Error.BadRecording,
-                    is RemoteRecognitionResult.Error.UnhandledError,
-                    -> {
-                        enqueuedRecognitionRepository.update(
-                            enqueuedRecognition.copy(result = result, resultDate = Instant.now())
-                        )
-                        Result.failure()
-                    }
+                    Result.failure()
+                } else {
+                    handleRetryOnAttempt()
                 }
             }
-            .first()
+
+            is RemoteRecognitionResult.Error.AuthError,
+            is RemoteRecognitionResult.Error.ApiUsageLimited,
+            is RemoteRecognitionResult.Error.BadRecording,
+            is RemoteRecognitionResult.Error.UnhandledError,
+            -> {
+                enqueuedRecognitionRepository.update(
+                    enqueuedRecognition.copy(result = result, resultDate = Instant.now())
+                )
+                Result.failure()
+            }
+        }
     }
 
     private suspend fun prepareTrackImages(track: Track) = withContext(Dispatchers.Default) {

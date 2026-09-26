@@ -12,6 +12,7 @@ import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionRepo
 import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionScheduler
 import com.mrsep.musicrecognizer.core.domain.recognition.model.EnqueuedRecognitionWithStatus
 import com.mrsep.musicrecognizer.core.domain.recognition.model.ScheduledJobStatus
+import com.mrsep.musicrecognizer.core.domain.usecase.DeleteEnqueuedRecognition
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.EnqueuedRecognitionUi
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.PlayerStatusUi
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.toUi
@@ -28,6 +29,7 @@ internal class QueueScreenViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val enqueuedRecognitionRepository: EnqueuedRecognitionRepository,
     private val recognitionScheduler: EnqueuedRecognitionScheduler,
+    private val deleteEnqueuedRecognitionUseCase: DeleteEnqueuedRecognition,
     private val playerController: PlayerController,
     private val dateFormatter: AppDateTimeFormatter,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
@@ -90,10 +92,8 @@ internal class QueueScreenViewModel @Inject constructor(
 
     fun cancelAndDeleteRecognitions(recognitionIds: Set<Int>) {
         viewModelScope.launch {
-            val listOfIds = recognitionIds.toList()
             playerController.stop()
-            recognitionScheduler.cancel(listOfIds)
-            enqueuedRecognitionRepository.delete(listOfIds)
+            deleteEnqueuedRecognitionUseCase(recognitionIds.toList())
         }
     }
 

@@ -50,6 +50,9 @@ internal fun UserPreferencesProto.toDomain() = UserPreferences(
         badConnection = fallbackPolicy.badConnection.toDomain(),
         anotherFailure = fallbackPolicy.anotherFailure.toDomain()
     ),
+    autoDeleteSavedRecordingOnMatch = autoDeleteSavedRecordingOnMatch
+        .takeIf { hasAutoDeleteSavedRecordingOnMatch() }
+        ?: true,
     recognizeOnStartup = recognizeOnStartup,
     requiredMusicServices = requiredMusicServicesList.map { service ->
         when (service!!) {

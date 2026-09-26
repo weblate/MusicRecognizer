@@ -207,6 +207,7 @@
     <string name="fallback_trigger_bad_connection">Плохое соединение</string>
     <string name="fallback_trigger_no_matches_found">Совпадений не найдено</string>
     <string name="fallback_trigger_other_failures">Другие ошибки</string>
+    <string name="pref_title_auto_delete_sample_on_match">Автоудаление аудиозаписи после успешного распознавания</string>
     <string name="pref_title_recognition_provider">Сервис распознавания</string>
     <string name="recognition_provider_dialog_title">Сервис распознавания</string>
     <string name="recognition_provider_dialog_message">Выберите текущий сервис:</string>

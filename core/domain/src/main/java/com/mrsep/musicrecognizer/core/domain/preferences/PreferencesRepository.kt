@@ -18,6 +18,7 @@ interface PreferencesRepository {
     suspend fun setUsePrerecording(value: Boolean)
     suspend fun setUseAltDeviceSoundSource(value: Boolean)
     suspend fun setFallbackPolicy(value: FallbackPolicy)
+    suspend fun setAutoDeleteSavedRecordingOnMatch(value: Boolean)
     suspend fun setRecognizeOnStartup(value: Boolean)
     suspend fun setNotificationServiceEnabled(value: Boolean)
     suspend fun setFloatingButtonEnabled(value: Boolean)

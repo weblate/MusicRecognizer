@@ -82,6 +82,10 @@ internal class PreferencesRepositoryImpl @Inject constructor(
         safeWriter { fallbackPolicy = value.toProto() }
     }
 
+    override suspend fun setAutoDeleteSavedRecordingOnMatch(value: Boolean) {
+        safeWriter { autoDeleteSavedRecordingOnMatch = value }
+    }
+
     override suspend fun setRecognizeOnStartup(value: Boolean) {
         safeWriter { recognizeOnStartup = value }
     }

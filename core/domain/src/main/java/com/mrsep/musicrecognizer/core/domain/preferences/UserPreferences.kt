@@ -14,6 +14,7 @@ data class UserPreferences(
     val usePrerecording: Boolean,
     val useAltDeviceSoundSource: Boolean,
     val fallbackPolicy: FallbackPolicy,
+    val autoDeleteSavedRecordingOnMatch: Boolean,
     val recognizeOnStartup: Boolean,
     val requiredMusicServices: List<MusicService>,
     val notificationServiceEnabled: Boolean,

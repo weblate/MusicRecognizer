@@ -134,6 +134,8 @@ message UserPreferencesProto {
 
   AudioCaptureModeProto last_used_audio_capture_mode = 50;
 
-  // NEXT AVAILABLE ID: 51
+  optional bool auto_delete_saved_recording_on_match = 51;
+
+  // NEXT AVAILABLE ID: 52
 
 }

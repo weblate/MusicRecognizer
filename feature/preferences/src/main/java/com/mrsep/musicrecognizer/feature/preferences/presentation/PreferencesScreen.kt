@@ -146,6 +146,8 @@ internal fun PreferencesScreen(
                             FallbackPolicyDialog(
                                 fallbackPolicy = uiState.preferences.fallbackPolicy,
                                 onFallbackPolicyChanged = viewModel::setFallbackPolicy,
+                                autoDeleteSavedRecordingOnMatch = uiState.preferences.autoDeleteSavedRecordingOnMatch,
+                                onAutoDeleteSavedRecordingOnMatchChanged = viewModel::setAutoDeleteSavedRecordingOnMatch,
                                 onDismissClick = { showPolicyDialog = false }
                             )
                         }

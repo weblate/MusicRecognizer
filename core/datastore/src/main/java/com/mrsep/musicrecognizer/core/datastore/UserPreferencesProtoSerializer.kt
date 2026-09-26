@@ -37,6 +37,7 @@ internal object UserPreferencesProtoSerializer : Serializer<UserPreferencesProto
                 badConnection = UserPreferencesProto.FallbackActionProto.SAVE_AND_LAUNCH
                 anotherFailure = UserPreferencesProto.FallbackActionProto.SAVE
             }
+            autoDeleteSavedRecordingOnMatch = true
             usePrerecording = true
             recognizeOnStartup = false
             requiredMusicServices.addAll(

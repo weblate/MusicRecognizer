@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -42,6 +43,8 @@ fun DialogSwitch(
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
         Switch(
@@ -79,7 +82,10 @@ fun DialogRadioButton(
         )
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
     }
 }
