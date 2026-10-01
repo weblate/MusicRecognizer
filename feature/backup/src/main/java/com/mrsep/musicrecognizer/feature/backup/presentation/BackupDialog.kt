@@ -95,12 +95,16 @@ internal fun BackupDialog(
                         title = stringResource(StringsR.string.backup_estimating_size)
                     )
 
-                    is BackupUiState.Ready -> BackupEntryPicker(
-                        title = stringResource(StringsR.string.backup_entry_picker_title),
-                        availableEntriesWithSizes = backupState.entriesUncompressedSize,
-                        selectedBackupEntries = backupState.selectedEntries,
-                        onChangeSelectedBackupEntry = onChangeSelectedBackupEntry,
-                    )
+                    is BackupUiState.Ready -> Column {
+                        BackupEntryPicker(
+                            title = stringResource(StringsR.string.backup_entry_picker_title),
+                            availableEntriesWithSizes = backupState.entriesUncompressedSize,
+                            selectedBackupEntries = backupState.selectedEntries,
+                            onChangeSelectedBackupEntry = onChangeSelectedBackupEntry,
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(text = stringResource(StringsR.string.backup_unencrypted_message))
+                    }
 
                     is BackupUiState.InProgress -> DialogProgressRow(
                         title = stringResource(StringsR.string.backup_in_progress)

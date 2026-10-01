@@ -266,8 +266,9 @@
     <string name="backup_entry_picker_title">Выберите данные для резервного копирования:</string>
     <string name="restore_entry_picker_title">Выберите данные для восстановления:</string>
     <string name="backup_estimating_size">Оценка объёма данных…</string>
-    <string name="backup_in_progress">Создаётся резервная копия…</string>
+    <string name="backup_in_progress">Создание резервной копии…</string>
     <string name="backup_result_success">Резервная копия успешно создана!</string>
+    <string name="backup_unencrypted_message">Резервные копии не зашифрованы. Храните их в защищенном месте.</string>
     <string name="restore_erase_warning">Процесс восстановления удалит текущие данные и заменит их содержимым резервной копии. Это действие нельзя отменить. При наличии важных данных сделайте их копию перед продолжением.</string>
     <string name="restore_info_restart">Приложение перезапустится после завершения восстановления.</string>
     <string name="restore_checking_backup">Проверка файла резервной копии…</string>
@@ -283,6 +284,40 @@
     <string name="toast_no_file_selected">Файл не выбран</string>
     <string name="toast_failed_delete_incomplete_backup_file">Не удалось удалить неполный файл резервной копии</string>
     <string name="toast_press_again_to_confirm">Нажмите ещё раз, чтобы подтвердить</string>
+    <!-- Automatic backup -->
+    <string name="pref_group_auto_backup">Автоматическое резервное копирование</string>
+    <string name="pref_title_auto_backup">Автоматическое резервное копирование</string>
+    <string name="pref_subtitle_auto_backup">Периодически сохранять резервную копию в выбранную папку</string>
+    <string name="pref_title_backup_location">Расположение резервных копий</string>
+    <string name="pref_subtitle_backup_location">Копии будут храниться в: %s</string>
+    <string name="pref_title_backup_frequency">Периодичность</string>
+    <string name="pref_subtitle_backup_frequency_one">Каждый день</string>
+    <plurals name="pref_subtitle_backup_frequency">
+        <item quantity="one">Каждый %d день</item>
+        <item quantity="few">Каждые %d дня</item>
+        <item quantity="many">Каждые %d дней</item>
+        <item quantity="other">Каждые %d дня</item>
+    </plurals>
+    <string name="backup_frequency_dialog_title">Периодичность</string>
+    <string name="pref_title_backup_retention">Сколько копий хранить</string>
+    <plurals name="pref_subtitle_backup_retention">
+        <item quantity="one">Последнюю %d копию</item>
+        <item quantity="few">Последние %d копии</item>
+        <item quantity="many">Последние %d копий</item>
+        <item quantity="other">Последние %d копии</item>
+    </plurals>
+    <string name="pref_subtitle_backup_retention_unlimited">Хранить все</string>
+    <string name="backup_retention_dialog_title">Сколько копий хранить</string>
+    <string name="auto_backup_status_last_success">Последняя копия: %s</string>
+    <string name="auto_backup_status_last_failure">Последняя попытка не удалась: %s</string>
+    <string name="auto_backup_status_scheduled">Резервное копирование запланировано</string>
+    <string name="notification_channel_name_backup">Резервное копирование</string>
+    <string name="notification_channel_desc_backup">Состояние автоматического резервного копирования</string>
+    <string name="auto_backup_notification_title">Не удалось создать резервную копию</string>
+    <string name="auto_backup_notification_auto_backup_was_turned_off">Автоматическое резервное копирование отключено</string>
+    <string name="auto_backup_error_access_denied">Нет доступа на запись в папку резервных копий, выберите её повторно</string>
+    <string name="auto_backup_error_file_not_found">Не удалось создать файл резервной копии в выбранной папке</string>
+    <string name="auto_backup_error_unhandled">Произошла непредвиденная ошибка, проверьте свободное место и доступность папки</string>
     <!-- CSV export -->
     <string name="pref_title_export_to_csv">Экспорт в CSV</string>
     <string name="pref_subtitle_export_to_csv">Экспортировать все треки в CSV-файл</string>

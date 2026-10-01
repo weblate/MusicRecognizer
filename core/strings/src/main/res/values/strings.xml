@@ -289,8 +289,9 @@
     <string name="backup_entry_picker_title">Select data to back up:</string>
     <string name="restore_entry_picker_title">Select data to restore:</string>
     <string name="backup_estimating_size">Estimating app data size…</string>
-    <string name="backup_in_progress">Creating backup…</string>
+    <string name="backup_in_progress">Creating a backup…</string>
     <string name="backup_result_success">Backup created successfully!</string>
+    <string name="backup_unencrypted_message">Backup files are unencrypted. Keep them in a private location.</string>
     <string name="restore_erase_warning">Restoring will erase current data and replace it with the contents of the backup. This action cannot be undone. Back up any important data before continuing.</string>
     <string name="restore_info_restart">The app will restart after the restore is complete.</string>
     <string name="restore_checking_backup">Checking backup file…</string>
@@ -306,6 +307,36 @@
     <string name="toast_no_file_selected">No file selected</string>
     <string name="toast_failed_delete_incomplete_backup_file">Could not delete incomplete backup file</string>
     <string name="toast_press_again_to_confirm">Press again to confirm</string>
+    <!-- Automatic backup -->
+    <string name="pref_group_auto_backup">Automatic backup</string>
+    <string name="pref_title_auto_backup">Automatic backup</string>
+    <string name="pref_subtitle_auto_backup">Periodically save a backup to a folder you choose</string>
+    <string name="pref_title_backup_location">Backup location</string>
+    <string name="pref_subtitle_backup_location">Backup will be stored at: %s</string>
+    <string name="pref_title_backup_frequency">Backup frequency</string>
+    <string name="pref_subtitle_backup_frequency_one">Every day</string>
+    <plurals name="pref_subtitle_backup_frequency">
+        <item quantity="one">Every %d day</item>
+        <item quantity="other">Every %d days</item>
+    </plurals>
+    <string name="backup_frequency_dialog_title">Backup frequency</string>
+    <string name="pref_title_backup_retention">Backups to keep</string>
+    <plurals name="pref_subtitle_backup_retention">
+        <item quantity="one">Last %d backup</item>
+        <item quantity="other">Last %d backups</item>
+    </plurals>
+    <string name="pref_subtitle_backup_retention_unlimited">Keep all</string>
+    <string name="backup_retention_dialog_title">Backups to keep</string>
+    <string name="auto_backup_status_last_success">Last backup: %s</string>
+    <string name="auto_backup_status_last_failure">Last attempt failed: %s</string>
+    <string name="auto_backup_status_scheduled">A backup is scheduled</string>
+    <string name="notification_channel_name_backup">Backup</string>
+    <string name="notification_channel_desc_backup">Status of automatic backups</string>
+    <string name="auto_backup_notification_title">Automatic backup failed</string>
+    <string name="auto_backup_notification_auto_backup_was_turned_off">Automatic backup was turned off</string>
+    <string name="auto_backup_error_access_denied">No permission to write to the backup folder, choose the folder again</string>
+    <string name="auto_backup_error_file_not_found">Could not create the backup file in the selected folder</string>
+    <string name="auto_backup_error_unhandled">An unexpected error occurred, check free space and that the folder is still available</string>
     <!-- CSV export -->
     <string name="pref_title_export_to_csv">Export to CSV</string>
     <string name="pref_subtitle_export_to_csv">Export all tracks to a CSV file</string>
