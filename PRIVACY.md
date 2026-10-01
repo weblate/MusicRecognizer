@@ -18,4 +18,6 @@ For recognition purposes, Audile uses one of the remote services AudD, ACRCloud,
 
 After a successful recognition, the app may make additional requests to external services, when necessary, to obtain extra information about the track. To retrieve additional platform-specific track links, the app uses the Odesli service or makes direct search requests to required music services. To retrieve song lyrics, the app uses the [LRCLIB](https://lrclib.net/) service.
 
+Audile lets you create backups of app data and restore from them. Backup files are not encrypted. Depending on what you include, they may contain your recognition history, stored audio samples, and API tokens from settings, all in a readable form. Keep backup files private, and encrypt them with your own tools if needed.
+
 Audile uses [ACRA](https://github.com/ACRA/acra) to generate crash reports in case of application failures. These reports contain detailed device and crash information, which can be useful for fixing issues. Reports are not sent automatically; instead, the app provides an option to email the report to developers, granting users full control over sharing their information.
