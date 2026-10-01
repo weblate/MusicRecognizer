@@ -40,6 +40,10 @@ internal class AudioSampleDataSourceImpl @Inject constructor(
         return getFiles().fold(0L) { acc, file -> acc + file.length() }
     }
 
+    override fun resolve(sampleFileName: String): File {
+        return File(samplesDir, sampleFileName)
+    }
+
     override suspend fun copy(sample: AudioSample): AudioSample? {
         val sampleName = getNewSampleName(sample.mimeType)
         val persistentSample = sample.copy(file = samplesDir.resolve(sampleName))

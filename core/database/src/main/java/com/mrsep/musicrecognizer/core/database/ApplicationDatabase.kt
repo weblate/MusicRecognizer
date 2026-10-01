@@ -19,7 +19,7 @@ import kotlin.time.Duration.Companion.milliseconds
         TrackEntity::class,
         EnqueuedRecognitionEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -30,7 +30,6 @@ import kotlin.time.Duration.Companion.milliseconds
 )
 @TypeConverters(
     value = [
-        FileRoomConverter::class,
         InstantRoomConverter::class,
         DurationRoomConverter::class,
         LocalDateRoomConverter::class,
@@ -52,7 +51,7 @@ abstract class ApplicationDatabase : RoomDatabase() {
 
     suspend fun checkoutWithRetry(): Boolean {
         var attemptCount = 1
-        while (attemptCount <= 3) {
+        while (attemptCount <= 4) {
             if (checkout()) return true
             Log.i(DATABASE_NAME, "Database checkpoint was blocked, retry")
             delay(500.milliseconds * attemptCount)

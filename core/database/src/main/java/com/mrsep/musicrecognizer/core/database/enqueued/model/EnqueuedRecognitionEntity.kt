@@ -6,7 +6,6 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.mrsep.musicrecognizer.core.database.track.TrackEntity
-import java.io.File
 import java.time.Instant
 
 @Entity(
@@ -28,7 +27,7 @@ data class EnqueuedRecognitionEntity(
     @ColumnInfo(name = "title")
     val title: String,
     @ColumnInfo(name = "record_file")
-    val recordFile: File,
+    val sampleFileName: String,
     @ColumnInfo(name = "creation_date")
     val creationDate: Instant,
 

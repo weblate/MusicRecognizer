@@ -6,7 +6,7 @@ import java.time.Instant
 data class EnqueuedRecognition(
     val id: Int,
     val title: String,
-    val recordFile: File,
+    val sampleFile: File,
     val creationDate: Instant,
     val result: RemoteRecognitionResult?,
     val resultDate: Instant?

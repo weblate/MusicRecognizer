@@ -6,7 +6,6 @@ import com.mrsep.musicrecognizer.core.database.DatabaseUtils.eachDbChunk
 import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitionEntity
 import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitionEntityWithTrack
 import kotlinx.coroutines.flow.Flow
-import java.io.File
 
 @Dao
 interface EnqueuedRecognitionDao {
@@ -24,15 +23,15 @@ interface EnqueuedRecognitionDao {
     suspend fun updateTitle(recognitionId: Int, newTitle: String)
 
     @Query("SELECT record_file FROM enqueued_recognition WHERE id = :recognitionId")
-    suspend fun getRecordingFile(recognitionId: Int): File?
+    suspend fun getSampleFileName(recognitionId: Int): String?
 
     @Transaction
-    suspend fun getRecordingFiles(recognitionIds: List<Int>): List<File> {
-        return recognitionIds.dbChunkedMap(::getRecordingFilesInternal)
+    suspend fun getSampleFileNames(recognitionIds: List<Int>): List<String> {
+        return recognitionIds.dbChunkedMap(::getSampleFileNamesInternal)
     }
 
     @Query("SELECT record_file FROM enqueued_recognition WHERE id IN (:recognitionIds)")
-    suspend fun getRecordingFilesInternal(recognitionIds: List<Int>): List<File>
+    suspend fun getSampleFileNamesInternal(recognitionIds: List<Int>): List<String>
 
     @Transaction
     suspend fun delete(recognitionIds: List<Int>) {

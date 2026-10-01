@@ -6,6 +6,7 @@ import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitio
 import com.mrsep.musicrecognizer.core.database.enqueued.model.RemoteRecognitionResultType
 import com.mrsep.musicrecognizer.core.domain.recognition.model.EnqueuedRecognition
 import com.mrsep.musicrecognizer.core.domain.recognition.model.RemoteRecognitionResult
+import java.io.File
 
 internal fun EnqueuedRecognition.toEntity(): EnqueuedRecognitionEntity {
     var resultType: RemoteRecognitionResultType? = null
@@ -59,7 +60,7 @@ internal fun EnqueuedRecognition.toEntity(): EnqueuedRecognitionEntity {
     return EnqueuedRecognitionEntity(
         id = id,
         title = title,
-        recordFile = recordFile,
+        sampleFileName = sampleFile.name,
         creationDate = creationDate,
         resultType = resultType,
         resultTrackId = trackId,
@@ -68,7 +69,7 @@ internal fun EnqueuedRecognition.toEntity(): EnqueuedRecognitionEntity {
     )
 }
 
-internal fun EnqueuedRecognitionEntityWithTrack.toDomain(): EnqueuedRecognition {
+internal fun EnqueuedRecognitionEntityWithTrack.toDomain(sampleFile: File): EnqueuedRecognition {
     val result = when (enqueued.resultType) {
         RemoteRecognitionResultType.Success -> track?.toDomain()
             ?.run(RemoteRecognitionResult::Success)
@@ -100,7 +101,7 @@ internal fun EnqueuedRecognitionEntityWithTrack.toDomain(): EnqueuedRecognition 
     return EnqueuedRecognition(
         id = enqueued.id,
         title = enqueued.title,
-        recordFile = enqueued.recordFile,
+        sampleFile = sampleFile,
         creationDate = enqueued.creationDate,
         result = result,
         resultDate = enqueued.resultDate

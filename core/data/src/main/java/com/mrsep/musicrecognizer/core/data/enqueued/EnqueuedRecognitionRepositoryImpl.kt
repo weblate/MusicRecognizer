@@ -5,7 +5,6 @@ import com.mrsep.musicrecognizer.core.common.di.IoDispatcher
 import com.mrsep.musicrecognizer.core.data.PersistentStoreLock
 import com.mrsep.musicrecognizer.core.database.ApplicationDatabase
 import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitionEntity
-import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitionEntityWithTrack
 import com.mrsep.musicrecognizer.core.domain.recognition.AudioSample
 import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionRepository
 import com.mrsep.musicrecognizer.core.domain.recognition.model.EnqueuedRecognition
@@ -33,7 +32,7 @@ internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
                 val enqueued = EnqueuedRecognitionEntity(
                     id = 0,
                     title = title,
-                    recordFile = sample.file,
+                    sampleFileName = sample.file.name,
                     creationDate = sample.timestamp
                 )
                 dao.insert(enqueued).toInt()
@@ -55,21 +54,25 @@ internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
 
     override suspend fun getAudioSampleFile(recognitionId: Int): File? {
         return withContext(ioDispatcher) {
-            dao.getRecordingFile(recognitionId)
+            dao.getSampleFileName(recognitionId)?.let(audioSampleDataSource::resolve)
         }
     }
 
     override suspend fun getAudioSample(recognitionId: Int): AudioSample? {
         return withContext(ioDispatcher) {
             dao.getRecognition(recognitionId)?.let { recognition ->
-                audioSampleDataSource.read(recognition.recordFile, recognition.creationDate)
+                audioSampleDataSource.read(
+                    audioSampleDataSource.resolve(recognition.sampleFileName),
+                    recognition.creationDate
+                )
             }
         }
     }
 
     override suspend fun delete(recognitionIds: List<Int>) {
         withStoreWrite {
-            val files = dao.getRecordingFiles(recognitionIds)
+            val files = dao.getSampleFileNames(recognitionIds)
+                .map(audioSampleDataSource::resolve)
             dao.delete(recognitionIds)
             files.forEach { file -> audioSampleDataSource.delete(file) }
         }
@@ -84,13 +87,19 @@ internal class EnqueuedRecognitionRepositoryImpl @Inject constructor(
 
     override fun getRecognitionFlow(recognitionId: Int): Flow<EnqueuedRecognition?> {
         return dao.getRecognitionWithTrackFlow(recognitionId)
-            .map { entity -> entity?.toDomain() }
+            .map { entity ->
+                entity?.toDomain(audioSampleDataSource.resolve(entity.enqueued.sampleFileName))
+            }
             .flowOn(ioDispatcher)
     }
 
     override fun getAllRecognitionsFlow(): Flow<List<EnqueuedRecognition>> {
         return dao.getAllRecognitionsWithTrackFlow()
-            .map { list -> list.map(EnqueuedRecognitionEntityWithTrack::toDomain) }
+            .map { list ->
+                list.map { entity ->
+                    entity.toDomain(audioSampleDataSource.resolve(entity.enqueued.sampleFileName))
+                }
+            }
             .flowOn(ioDispatcher)
     }
 

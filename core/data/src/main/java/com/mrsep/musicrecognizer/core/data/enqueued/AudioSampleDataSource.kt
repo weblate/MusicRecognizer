@@ -10,6 +10,8 @@ interface AudioSampleDataSource {
 
     fun getTotalSize(): Long
 
+    fun resolve(sampleFileName: String): File
+
     suspend fun copy(sample: AudioSample): AudioSample?
 
     suspend fun read(file: File, timestamp: Instant): AudioSample?

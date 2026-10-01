@@ -32,7 +32,7 @@ internal fun EnqueuedRecognitionWithStatus.toUi(
         creationDateLong = creationZonedTime.format(
             DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
         ),
-        recordingFile = enqueued.recordFile,
+        recordingFile = enqueued.sampleFile,
         status = status,
         result = enqueued.result?.toUi(),
         resultDateLong = enqueued.resultDate?.atZone(ZoneId.systemDefault())?.format(
