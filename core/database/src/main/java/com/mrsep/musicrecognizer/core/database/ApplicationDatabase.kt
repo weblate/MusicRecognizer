@@ -12,6 +12,7 @@ import com.mrsep.musicrecognizer.core.database.migration.AutoMigrationSpec3To4
 import com.mrsep.musicrecognizer.core.database.track.TrackDao
 import com.mrsep.musicrecognizer.core.database.track.TrackEntity
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Database(
     entities = [
@@ -53,25 +54,32 @@ abstract class ApplicationDatabase : RoomDatabase() {
         var attemptCount = 1
         while (attemptCount <= 3) {
             if (checkout()) return true
-            Log.i(this::class.simpleName, "Database checkpoint was blocked, retry")
-            delay(500L * attemptCount)
+            Log.i(DATABASE_NAME, "Database checkpoint was blocked, retry")
+            delay(500.milliseconds * attemptCount)
             attemptCount++
         }
         return false
     }
 
     // https://www.sqlite.org/pragma.html#pragma_wal_checkpoint
-    // TRUNCATE: checkpoint then shrink WAL to 0 bytes
+    // TRUNCATE waits for all readers so it can reset the WAL, FULL does not
     private fun checkout(): Boolean {
-        return query(SimpleSQLiteQuery("PRAGMA wal_checkpoint(TRUNCATE)")).use { cursor ->
-            cursor.moveToFirst()
-            if (cursor.getInt(0) == 0) {
-                if (cursor.getInt(1) == -1 && cursor.getInt(2) == -1) {
-                    Log.w(this::class.simpleName, "There is no write-ahead log for database")
+        return query(SimpleSQLiteQuery("PRAGMA wal_checkpoint(FULL)")).use { cursor ->
+            if (!cursor.moveToFirst()) return false
+            val busy = cursor.getInt(0)
+            val log = cursor.getInt(1)
+            val checkpointed = cursor.getInt(2)
+            if (busy != 0) return false
+            when {
+                log == -1 && checkpointed == -1 -> {
+                    Log.w(DATABASE_NAME, "There is no write-ahead log for database")
+                    true
                 }
-                true
-            } else {
-                false
+                log >= 0 && log == checkpointed -> true
+                else -> {
+                    Log.w(DATABASE_NAME, "Incomplete WAL checkpoint: log=$log, checkpointed=$checkpointed")
+                    false
+                }
             }
         }
     }
