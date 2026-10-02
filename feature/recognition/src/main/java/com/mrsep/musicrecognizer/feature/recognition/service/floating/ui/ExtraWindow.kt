@@ -75,6 +75,7 @@ import com.mrsep.musicrecognizer.feature.recognition.service.floating.FloatingWi
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.StartRecognitionAction
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.LocalFloatingWindow
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.ui.components.FloatingSyncedLyrics
+import com.mrsep.musicrecognizer.feature.recognition.service.floating.ui.components.remainingPlaybackDuration
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.ui.components.rememberSegmentedTailShapes
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.ui.components.shouldShowFloatingLyrics
 import com.mrsep.musicrecognizer.feature.recognition.widget.ui.getWidgetSubtitleForStatus
@@ -97,6 +98,7 @@ private const val SubContentColorAlpha = 0.8f
 
 private val TrackInfoMinTimeout = 7.seconds
 private val TrackInfoExtendedTimeout = 15.seconds
+private val RemainingPlaybackThreshold = 5.seconds
 
 private enum class TrackContentMode { TrackInfo, Lyrics }
 
@@ -193,28 +195,33 @@ internal fun ExtraWindow(
                             ) {
                                 if (contentMode != TrackContentMode.TrackInfo) return@LaunchedEffect
 
-                                if (syncedLyrics != null) {
-                                    val trackInfoRemainingTime = TrackInfoMinTimeout - firstShowMark.elapsedNow()
-                                    delay(trackInfoRemainingTime)
-                                    val shouldShowLyrics = shouldShowFloatingLyrics(
+                                val remainingPlayback = remainingPlaybackDuration(
+                                    trackDuration = currentTrack.duration,
+                                    recognizedAt = currentTrack.recognizedAt,
+                                    recognitionDate = currentTrack.recognitionDate,
+                                )
+                                val shouldWaitForLyricsFetch = syncedLyrics == null &&
+                                    isLyricsFetcherRunning &&
+                                    (remainingPlayback == null || remainingPlayback > RemainingPlaybackThreshold)
+
+                                val timeout = if (shouldWaitForLyricsFetch) {
+                                    TrackInfoExtendedTimeout
+                                } else {
+                                    TrackInfoMinTimeout
+                                }
+                                delay(timeout - firstShowMark.elapsedNow())
+
+                                if (syncedLyrics != null &&
+                                    shouldShowFloatingLyrics(
                                         lyrics = syncedLyrics,
                                         trackDuration = currentTrack.duration,
                                         recognizedAt = currentTrack.recognizedAt,
                                         recognitionDate = currentTrack.recognitionDate,
-                                        threshold = 5.seconds
+                                        threshold = RemainingPlaybackThreshold,
                                     )
-                                    if (shouldShowLyrics) {
-                                        contentMode = TrackContentMode.Lyrics
-                                    } else {
-                                        sharedModel.dismissRecognitionResult()
-                                    }
-                                } else if (isLyricsFetcherRunning) {
-                                    val trackInfoRemainingTime = TrackInfoExtendedTimeout - firstShowMark.elapsedNow()
-                                    delay(trackInfoRemainingTime)
-                                    sharedModel.dismissRecognitionResult()
+                                ) {
+                                    contentMode = TrackContentMode.Lyrics
                                 } else {
-                                    val trackInfoRemainingTime = TrackInfoMinTimeout - firstShowMark.elapsedNow()
-                                    delay(trackInfoRemainingTime)
                                     sharedModel.dismissRecognitionResult()
                                 }
                             }
@@ -307,6 +314,10 @@ internal fun ExtraWindow(
                         RecognitionResult.NoSoundDetected,
                         is RecognitionResult.ScheduledOffline,
                         is RecognitionResult.Error -> {
+                            LaunchedEffect(Unit) {
+                                delay(TrackInfoMinTimeout)
+                                sharedModel.dismissRecognitionResult()
+                            }
                             val title = context.getWidgetTitleForStatus(status)
                             val subtitle = context.getWidgetSubtitleForStatus(status)
                             ExtraWindowContainer(

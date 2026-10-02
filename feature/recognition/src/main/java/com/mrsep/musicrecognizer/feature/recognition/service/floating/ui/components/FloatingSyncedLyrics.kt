@@ -65,10 +65,9 @@ internal fun FloatingSyncedLyrics(
 
     LifecycleStartEffect(recognizedAt, recognitionDate, actualTrackDuration) {
         if (!lyricsPlayer.isPlaying && recognizedAt != null && lines.isNotEmpty()) {
-            val timePassed = java.time.Duration.between(recognitionDate, Instant.now()).toKotlinDuration()
-            val currentPlaybackOffset = recognizedAt + timePassed
-            if (currentPlaybackOffset in Duration.ZERO.rangeUntil(actualTrackDuration)) {
-                lyricsPlayer.start(currentPlaybackOffset, actualTrackDuration)
+            val currentOffset = currentPlaybackOffset(recognizedAt, recognitionDate)
+            if (currentOffset in Duration.ZERO.rangeUntil(actualTrackDuration)) {
+                lyricsPlayer.start(currentOffset, actualTrackDuration)
                 currentOnPlaybackStarted()
             }
         }
@@ -167,6 +166,23 @@ internal fun FloatingSyncedLyrics(
     }
 }
 
+internal fun currentPlaybackOffset(
+    recognizedAt: Duration,
+    recognitionDate: Instant,
+): Duration {
+    val timePassed = java.time.Duration.between(recognitionDate, Instant.now()).toKotlinDuration()
+    return recognizedAt + timePassed
+}
+
+internal fun remainingPlaybackDuration(
+    trackDuration: Duration?,
+    recognizedAt: Duration?,
+    recognitionDate: Instant,
+): Duration? {
+    if (trackDuration == null || recognizedAt == null) return null
+    return trackDuration - currentPlaybackOffset(recognizedAt, recognitionDate)
+}
+
 internal fun shouldShowFloatingLyrics(
     lyrics: SyncedLyrics,
     trackDuration: Duration?,
@@ -178,13 +194,11 @@ internal fun shouldShowFloatingLyrics(
 
     val minLyricsDuration = lyrics.lines.last().timestamp + 2.seconds
     val actualTrackDuration = trackDuration?.coerceAtLeast(minLyricsDuration) ?: minLyricsDuration
+    val currentOffset = currentPlaybackOffset(recognizedAt, recognitionDate)
 
-    val timePassed = java.time.Duration.between(recognitionDate, Instant.now()).toKotlinDuration()
-    val currentPlaybackOffset = recognizedAt + timePassed
+    if (currentOffset !in Duration.ZERO.rangeUntil(actualTrackDuration)) return false
 
-    if (currentPlaybackOffset !in Duration.ZERO.rangeUntil(actualTrackDuration)) return false
-
-    val currentLineIndex = lyrics.currentLineIndex(currentPlaybackOffset) ?: return false
+    val currentLineIndex = lyrics.currentLineIndex(currentOffset) ?: return false
     return lyrics.hasMeaningfulRemainingDuration(
         currentLineIndex,
         actualTrackDuration,
