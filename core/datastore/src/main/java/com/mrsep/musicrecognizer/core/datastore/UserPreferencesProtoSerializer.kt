@@ -91,6 +91,13 @@ internal object UserPreferencesProtoSerializer : Serializer<UserPreferencesProto
             themeMode = UserPreferencesProto.ThemeModeProto.FOLLOW_SYSTEM
             usePureBlackForDarkTheme = false
             hasDoneRequiredMusicServicesMigration = true
+            autoBackup = autoBackupPreferencesProto {
+                enabled = false
+                treeUri = ""
+                intervalDays = 7
+                keepCount = 3
+            }
+            autoBackupConsecutiveFailures = 0
         }
 
     override suspend fun readFrom(input: InputStream): UserPreferencesProto {

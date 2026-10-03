@@ -25,7 +25,7 @@ import com.mrsep.musicrecognizer.core.domain.recognition.model.RecognitionTask
 import com.mrsep.musicrecognizer.core.domain.recognition.model.RemoteRecognitionResult
 import com.mrsep.musicrecognizer.core.domain.track.model.Track
 import com.mrsep.musicrecognizer.core.ui.util.dpToPx
-import com.mrsep.musicrecognizer.feature.recognition.DeeplinkRouter
+import com.mrsep.musicrecognizer.core.common.DeeplinkRouter
 import com.mrsep.musicrecognizer.feature.recognition.service.ext.getCachedImageOrNull
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first

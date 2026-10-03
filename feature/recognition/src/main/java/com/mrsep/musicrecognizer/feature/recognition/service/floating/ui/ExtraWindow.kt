@@ -69,7 +69,7 @@ import com.mrsep.musicrecognizer.core.domain.track.model.SyncedLyrics
 import com.mrsep.musicrecognizer.core.ui.theme.MusicRecognizerTheme
 import com.mrsep.musicrecognizer.core.ui.theme.SwitchingMusicRecognizerTheme
 import com.mrsep.musicrecognizer.core.ui.util.copyTextToClipboard
-import com.mrsep.musicrecognizer.feature.recognition.DeeplinkRouter
+import com.mrsep.musicrecognizer.core.common.DeeplinkRouter
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.FloatingWindowSharedModel
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.FloatingWindowUiState
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.StartRecognitionAction

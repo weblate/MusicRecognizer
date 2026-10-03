@@ -80,8 +80,9 @@ internal class AppBackupManagerImpl @Inject constructor(
     ): BackupResult = withContext(ioDispatcher) {
         check(entries.isNotEmpty()) { "At least one BackupEntry must be provided" }
         val outputStream = try {
-            requireNotNull(appContext.contentResolver.openOutputStream(destination))
+            appContext.contentResolver.openOutputStreamPreferTruncate(destination)
         } catch (_: Exception) {
+            deleteUnfinishedBackup(destination)
             return@withContext BackupResult.FileNotFound
         }
         try {
@@ -97,6 +98,7 @@ internal class AppBackupManagerImpl @Inject constructor(
                         if (entries.contains(BackupEntry.Preferences)) {
                             exportUserPreferences(zipOutputStream)
                         }
+                        writeSentinelEntry(zipOutputStream)
                     }
                     BackupResult.Success
                 }
@@ -146,7 +148,7 @@ internal class AppBackupManagerImpl @Inject constructor(
 
     private suspend fun exportUserPreferences(zipOutputStream: ZipOutputStream) {
         currentCoroutineContext().ensureActive()
-        val preferences = userPreferencesDataStore.data.first()
+        val preferences = userPreferencesDataStore.data.first().sanitizedForBackup()
         with(zipOutputStream) {
             putNextEntry(ZipEntry(PREFERENCES_ZIP_ENTRY))
             preferences.writeTo(this)
@@ -166,11 +168,13 @@ internal class AppBackupManagerImpl @Inject constructor(
             ZipInputStream(inputStream.buffered()).use { zipInputStream ->
                 var metadata: BackupMetadata? = null
                 val foundEntries = mutableMapOf<BackupEntry, Long>()
+                var lastEntryName = ""
 
                 var currentEntry: ZipEntry? = zipInputStream.nextEntry
                 // The first entry must be metadata file
                 if (currentEntry?.name == METADATA_ZIP_ENTRY) {
                     metadata = readMetadata(zipInputStream)
+                    lastEntryName = METADATA_ZIP_ENTRY
                 }
                 if (metadata == null) return@withContext BackupMetadataResult.NotBackupFile
                 zipInputStream.closeEntry()
@@ -180,6 +184,7 @@ internal class AppBackupManagerImpl @Inject constructor(
                     // Metadata fields in the ZipEntry are only available after the entry data has been read
                     // This is because the metadata follows the data in the Zip format
                     zipInputStream.closeEntry()
+                    lastEntryName = currentEntry.name
                     when (currentEntry.name) {
                         DATABASE_ZIP_ENTRY -> {
                             foundEntries[BackupEntry.Data] = currentEntry.size
@@ -191,6 +196,8 @@ internal class AppBackupManagerImpl @Inject constructor(
                             foundEntries[BackupEntry.Preferences] = currentEntry.size
                         }
 
+                        SENTINEL_ZIP_ENTRY -> {}
+
                         else -> {
                             findRecordingName(currentEntry)
                                 ?: return@withContext BackupMetadataResult.MalformedBackup
@@ -201,6 +208,9 @@ internal class AppBackupManagerImpl @Inject constructor(
                         }
                     }
                     currentEntry = zipInputStream.nextEntry
+                }
+                if (!isWellFormedBackup(metadata, lastEntryName, foundEntries.keys)) {
+                    return@withContext BackupMetadataResult.MalformedBackup
                 }
                 BackupMetadataResult.Success(
                     metadata = metadata,
@@ -252,20 +262,31 @@ internal class AppBackupManagerImpl @Inject constructor(
                     }
 
                     var databaseStaged = false
+                    var lastEntryName = METADATA_ZIP_ENTRY
+                    val foundEntries = mutableSetOf<BackupEntry>()
                     while (true) {
                         val entry = zipInputStream.nextEntry ?: break
                         currentCoroutineContext().ensureActive()
+                        lastEntryName = entry.name
                         when (entry.name) {
-                            DATABASE_ZIP_ENTRY -> if (entries.contains(BackupEntry.Data)) {
-                                importDatabaseToStaging(zipInputStream)
-                                databaseStaged = true
+                            DATABASE_ZIP_ENTRY -> {
+                                foundEntries.add(BackupEntry.Data)
+                                if (entries.contains(BackupEntry.Data)) {
+                                    importDatabaseToStaging(zipInputStream)
+                                    databaseStaged = true
+                                }
                             }
 
                             RECORDINGS_DIR_ZIP_ENTRY -> {} // just skip
 
-                            PREFERENCES_ZIP_ENTRY -> if (entries.contains(BackupEntry.Preferences)) {
-                                importPreferencesToStaging(zipInputStream)
+                            PREFERENCES_ZIP_ENTRY -> {
+                                foundEntries.add(BackupEntry.Preferences)
+                                if (entries.contains(BackupEntry.Preferences)) {
+                                    importPreferencesToStaging(zipInputStream)
+                                }
                             }
+
+                            SENTINEL_ZIP_ENTRY -> {}
 
                             else -> {
                                 val recordingName = findRecordingName(entry)
@@ -281,12 +302,18 @@ internal class AppBackupManagerImpl @Inject constructor(
                         }
                         zipInputStream.closeEntry()
                     }
+                    if (!isWellFormedBackup(metadata, lastEntryName, foundEntries)) {
+                        return@withExclusive RestoreResult.UnhandledError(
+                            appRestartRequired = true,
+                            message = "This backup file is corrupted."
+                        )
+                    }
                     withContext(NonCancellable) {
                         RestoreStaging.markReady(appContext)
                     }
+                    RestoreResult.Success(appRestartRequired = true)
                 }
             }
-            RestoreResult.Success(appRestartRequired = true)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -335,7 +362,11 @@ internal class AppBackupManagerImpl @Inject constructor(
     private fun importPreferencesToStaging(zipInputStream: ZipInputStream) {
         val preferencesPath = RestoreStaging.stagingPreferencesFile(appContext).toPath()
         Files.createDirectories(preferencesPath.parent)
-        Files.copy(zipInputStream, preferencesPath, StandardCopyOption.REPLACE_EXISTING)
+        val preferences = UserPreferencesProto.parseFrom(zipInputStream.readBytes())
+            .sanitizedForBackup()
+        Files.newOutputStream(preferencesPath).use { output ->
+            preferences.writeTo(output)
+        }
     }
 
     private fun writeMetadata(zipOutputStream: ZipOutputStream, entries: Set<BackupEntry>) {
@@ -344,6 +375,7 @@ internal class AppBackupManagerImpl @Inject constructor(
             appVersionCode = appContext.getAppVersionCode(),
             creationDate = Instant.now(),
             entries = entries,
+            formatVersion = BACKUP_FORMAT_VERSION,
         )
         val prettyJson = Json(json) { prettyPrint = true }
         val metadataJson = prettyJson.encodeToString(metadata)
@@ -364,6 +396,26 @@ internal class AppBackupManagerImpl @Inject constructor(
         }
     }
 
+    private fun writeSentinelEntry(zipOutputStream: ZipOutputStream) {
+        with(zipOutputStream) {
+            putNextEntry(ZipEntry(SENTINEL_ZIP_ENTRY))
+            closeEntry()
+        }
+    }
+
+    private fun isWellFormedBackup(
+        metadata: BackupMetadata,
+        lastEntryName: String,
+        foundEntries: Set<BackupEntry>,
+    ): Boolean {
+        if (metadata.formatVersion >= SENTINEL_SINCE_FORMAT_VERSION &&
+            lastEntryName != SENTINEL_ZIP_ENTRY
+        ) {
+            return false
+        }
+        return foundEntries.containsAll(metadata.entries)
+    }
+
     private fun findRecordingName(entry: ZipEntry): String? {
         return recordingEntryNamePattern.matchEntire(entry.name)?.groups?.get(1)?.value
     }
@@ -373,9 +425,12 @@ internal class AppBackupManagerImpl @Inject constructor(
         private const val PREFERENCES_ZIP_ENTRY = "preferences"
         private const val DATABASE_ZIP_ENTRY = "database"
         private const val METADATA_ZIP_ENTRY = "metadata"
+        private const val SENTINEL_ZIP_ENTRY = "sentinel"
         private const val RECORDINGS_DIR_ZIP_ENTRY = "audio_recordings/"
         private const val BACKUP_VERIFICATION_UUID = "9530d0d1-8023-4c3a-99d0-7cbb084020f1"
+        private const val BACKUP_FORMAT_VERSION = 2
+        private const val SENTINEL_SINCE_FORMAT_VERSION = 2
 
-        private val recordingEntryNamePattern = Regex("^$RECORDINGS_DIR_ZIP_ENTRY([^/]+)\$")
+        private val recordingEntryNamePattern = Regex("^${Regex.escape(RECORDINGS_DIR_ZIP_ENTRY)}([^/]+)$")
     }
 }

@@ -10,6 +10,7 @@ import com.mrsep.musicrecognizer.core.common.di.IoDispatcher
 import com.mrsep.musicrecognizer.core.domain.preferences.FavoritesMode
 import com.mrsep.musicrecognizer.core.domain.track.TrackRepository
 import com.mrsep.musicrecognizer.feature.backup.CsvField.Companion.extractFrom
+import com.mrsep.musicrecognizer.feature.backup.data.openOutputStreamPreferTruncate
 import com.mrsep.musicrecognizer.feature.backup.presentation.header
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -30,6 +31,8 @@ internal data class CsvExportParams(
     val favoritesMode: FavoritesMode,
 )
 
+private const val TAG = "CsvExporterImpl"
+
 internal class CsvExporterImpl @Inject constructor(
     private val trackRepository: TrackRepository,
     @ApplicationContext private val appContext: Context,
@@ -40,9 +43,12 @@ internal class CsvExporterImpl @Inject constructor(
 
     override suspend fun export(destination: Uri, params: CsvExportParams) = withContext(ioDispatcher) {
         try {
-            val outputStream = runCatching {
-                appContext.contentResolver.openOutputStream(destination)
-            }.getOrNull() ?: return@withContext ExportResult.FileNotFound
+            val outputStream = try {
+                appContext.contentResolver.openOutputStreamPreferTruncate(destination)
+            } catch (_: Exception) {
+                deleteUnfinishedExportFile(destination)
+                return@withContext ExportResult.FileNotFound
+            }
 
             var trackCount = 0
             val trackRows = trackRepository.getTracksFlow(params.favoritesMode).first()
@@ -67,7 +73,7 @@ internal class CsvExporterImpl @Inject constructor(
             throw e
         } catch (e: Exception) {
             val baseMsg = "Fatal error while creating CSV file"
-            Log.e(this::class.simpleName, baseMsg, e)
+            Log.e(TAG, baseMsg, e)
             deleteUnfinishedExportFile(destination)
             ExportResult.UnhandledError(e.message ?: baseMsg)
         }
@@ -77,7 +83,7 @@ internal class CsvExporterImpl @Inject constructor(
         try {
             DocumentsContract.deleteDocument(appContext.contentResolver, uri)
         } catch (e: Exception) {
-            Log.e(this::class.simpleName, "Failed to delete unfinished CSV file", e)
+            Log.e(TAG, "Failed to delete unfinished CSV file", e)
         }
     }
 }

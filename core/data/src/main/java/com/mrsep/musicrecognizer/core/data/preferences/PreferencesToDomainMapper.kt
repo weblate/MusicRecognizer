@@ -2,12 +2,17 @@ package com.mrsep.musicrecognizer.core.data.preferences
 
 import android.os.Build
 import com.mrsep.musicrecognizer.core.datastore.AudioCaptureModeProto
+import com.mrsep.musicrecognizer.core.datastore.AutoBackupErrorTypeProto
+import com.mrsep.musicrecognizer.core.datastore.AutoBackupResultProto
 import com.mrsep.musicrecognizer.core.datastore.MusicServiceProto
 import com.mrsep.musicrecognizer.core.datastore.RecognitionProviderProto
 import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto
 import com.mrsep.musicrecognizer.core.domain.preferences.AcrCloudConfig
 import com.mrsep.musicrecognizer.core.domain.preferences.AuddConfig
 import com.mrsep.musicrecognizer.core.domain.preferences.AudioCaptureMode
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupPreferences
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupError
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupResult
 import com.mrsep.musicrecognizer.core.domain.preferences.FallbackAction
 import com.mrsep.musicrecognizer.core.domain.preferences.FallbackPolicy
 import com.mrsep.musicrecognizer.core.domain.preferences.FavoritesMode
@@ -21,10 +26,11 @@ import com.mrsep.musicrecognizer.core.domain.preferences.TrackFilter
 import com.mrsep.musicrecognizer.core.domain.preferences.UserPreferences
 import com.mrsep.musicrecognizer.core.domain.recognition.model.RecognitionProvider
 import com.mrsep.musicrecognizer.core.domain.track.model.MusicService
+import java.time.Instant
 
 internal fun UserPreferencesProto.toDomain() = UserPreferences(
     onboardingCompleted = onboardingCompleted,
-    currentRecognitionProvider = when (currentRecognitionProvider!!) {
+    currentRecognitionProvider = when (currentRecognitionProvider) {
         RecognitionProviderProto.Audd -> RecognitionProvider.Audd
         RecognitionProviderProto.AcrCloud -> RecognitionProvider.AcrCloud
         RecognitionProviderProto.Shazam -> RecognitionProvider.Shazam
@@ -55,7 +61,7 @@ internal fun UserPreferencesProto.toDomain() = UserPreferences(
         ?: true,
     recognizeOnStartup = recognizeOnStartup,
     requiredMusicServices = requiredMusicServicesList.map { service ->
-        when (service!!) {
+        when (service) {
             MusicServiceProto.AmazonMusic -> MusicService.AmazonMusic
             MusicServiceProto.Anghami -> MusicService.Anghami
             MusicServiceProto.AppleMusic -> MusicService.AppleMusic
@@ -81,7 +87,7 @@ internal fun UserPreferencesProto.toDomain() = UserPreferences(
     dynamicColorsEnabled = dynamicColorsEnabled,
     artworkBasedThemeEnabled = artworkBasedThemeEnabled,
     lyricsStyle = LyricsStyle(
-        fontSize = when (lyricsStyle.fontSize!!) {
+        fontSize = when (lyricsStyle.fontSize) {
             UserPreferencesProto.FontSizeProto.SMALL -> FontSize.Small
             UserPreferencesProto.FontSizeProto.NORMAL -> FontSize.Normal
             UserPreferencesProto.FontSizeProto.LARGE -> FontSize.Large
@@ -93,20 +99,20 @@ internal fun UserPreferencesProto.toDomain() = UserPreferences(
         alignToStart = lyricsStyle.alignToStart
     ),
     trackFilter = TrackFilter(
-        favoritesMode = when (trackFilter.favoritesMode!!) {
+        favoritesMode = when (trackFilter.favoritesMode) {
             UserPreferencesProto.FavoritesModeProto.ALL -> FavoritesMode.All
             UserPreferencesProto.FavoritesModeProto.ONLY_FAVORITES -> FavoritesMode.OnlyFavorites
             UserPreferencesProto.FavoritesModeProto.EXCLUDE_FAVORITES -> FavoritesMode.ExcludeFavorites
             UserPreferencesProto.FavoritesModeProto.UNRECOGNIZED -> error("Unexpected proto value")
         },
-        sortBy = when (trackFilter.sortBy!!) {
+        sortBy = when (trackFilter.sortBy) {
             UserPreferencesProto.SortByProto.RECOGNITION_DATE -> SortBy.RecognitionDate
             UserPreferencesProto.SortByProto.TITLE -> SortBy.Title
             UserPreferencesProto.SortByProto.ARTIST -> SortBy.Artist
             UserPreferencesProto.SortByProto.RELEASE_DATE -> SortBy.ReleaseDate
             UserPreferencesProto.SortByProto.UNRECOGNIZED -> error("Unexpected proto value")
         },
-        orderBy = when (trackFilter.orderBy!!) {
+        orderBy = when (trackFilter.orderBy) {
             UserPreferencesProto.OrderByProto.ASC -> OrderBy.Asc
             UserPreferencesProto.OrderByProto.DESC -> OrderBy.Desc
             UserPreferencesProto.OrderByProto.UNRECOGNIZED -> error("Unexpected proto value")
@@ -121,13 +127,34 @@ internal fun UserPreferencesProto.toDomain() = UserPreferences(
     useGridForRecognitionQueue = useGridForRecognitionQueue,
     showRecognitionDateInLibrary = showRecognitionDateInLibrary,
     showCreationDateInQueue = showCreationDateInQueue,
-    themeMode = when (themeMode!!) {
+    themeMode = when (themeMode) {
         UserPreferencesProto.ThemeModeProto.FOLLOW_SYSTEM -> ThemeMode.FollowSystem
         UserPreferencesProto.ThemeModeProto.ALWAYS_LIGHT -> ThemeMode.AlwaysLight
         UserPreferencesProto.ThemeModeProto.ALWAYS_DARK -> ThemeMode.AlwaysDark
         UserPreferencesProto.ThemeModeProto.UNRECOGNIZED -> error("Unexpected proto value")
     },
-    usePureBlackForDarkTheme = usePureBlackForDarkTheme
+    usePureBlackForDarkTheme = usePureBlackForDarkTheme,
+    autoBackup = if (hasAutoBackup()) {
+        AutoBackupPreferences(
+            enabled = autoBackup.enabled,
+            treeUri = autoBackup.treeUri,
+            intervalDays = autoBackup.intervalDays,
+            keepCount = autoBackup.keepCount,
+        )
+    } else {
+        AutoBackupPreferences(
+            enabled = false,
+            treeUri = "",
+            intervalDays = AutoBackupPreferences.DEFAULT_INTERVAL_DAYS,
+            keepCount = AutoBackupPreferences.DEFAULT_KEEP_COUNT,
+        )
+    },
+    autoBackupLastResult = if (hasLastAutoBackupResult()) {
+        lastAutoBackupResult.toDomain()
+    } else {
+        null
+    },
+    autoBackupConsecutiveFailures = autoBackupConsecutiveFailures,
 )
 
 internal fun AudioCaptureModeProto.toDomain() = when (this) {
@@ -143,4 +170,30 @@ internal fun UserPreferencesProto.FallbackActionProto.toDomain() = when (this) {
     UserPreferencesProto.FallbackActionProto.SAVE -> FallbackAction.Save
     UserPreferencesProto.FallbackActionProto.SAVE_AND_LAUNCH -> FallbackAction.SaveAndLaunch
     UserPreferencesProto.FallbackActionProto.UNRECOGNIZED -> error("Unexpected proto value")
+}
+
+internal fun AutoBackupResultProto.toDomain(): AutoBackupResult {
+    val timestamp = Instant.ofEpochMilli(timestampEpochMilli)
+    return when (statusCase) {
+        AutoBackupResultProto.StatusCase.SUCCESS -> {
+            AutoBackupResult.Success(timestamp)
+        }
+        AutoBackupResultProto.StatusCase.FAILURE -> {
+            AutoBackupResult.Failure(
+                timestamp = timestamp,
+                reason = failure.kind.toDomain(),
+                message = failure.message.ifBlank { null },
+            )
+        }
+        AutoBackupResultProto.StatusCase.STATUS_NOT_SET,
+        null -> AutoBackupResult.Failure(timestamp, AutoBackupError.Unhandled)
+    }
+}
+
+internal fun AutoBackupErrorTypeProto.toDomain() = when (this) {
+    AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_ACCESS_DENIED -> AutoBackupError.AccessDenied
+    AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_FILE_NOT_FOUND -> AutoBackupError.FileNotFound
+    AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_UNHANDLED,
+    AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_UNSPECIFIED,
+    AutoBackupErrorTypeProto.UNRECOGNIZED -> AutoBackupError.Unhandled
 }

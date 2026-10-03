@@ -30,6 +30,9 @@ data class UserPreferences(
     val showCreationDateInQueue: Boolean,
     val themeMode: ThemeMode,
     val usePureBlackForDarkTheme: Boolean,
+    val autoBackup: AutoBackupPreferences,
+    val autoBackupLastResult: AutoBackupResult?,
+    val autoBackupConsecutiveFailures: Int,
 )
 
 enum class AudioCaptureMode { Microphone, Device, Auto }

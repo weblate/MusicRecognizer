@@ -2,7 +2,7 @@ package com.mrsep.musicrecognizer.di
 
 import com.mrsep.musicrecognizer.feature.backup.AppRestartManager
 import com.mrsep.musicrecognizer.feature.preferences.RecognitionServiceStarter
-import com.mrsep.musicrecognizer.feature.recognition.DeeplinkRouter
+import com.mrsep.musicrecognizer.core.common.DeeplinkRouter
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

@@ -18,6 +18,9 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import com.mrsep.musicrecognizer.core.audio.audiorecord.encoder.AudioRecordingDataSource
 import com.mrsep.musicrecognizer.core.common.di.ApplicationScope
+import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
+import com.mrsep.musicrecognizer.feature.backup.AutoBackupScheduler
+import com.mrsep.musicrecognizer.feature.backup.BackupNotificationHelper
 import com.mrsep.musicrecognizer.feature.backup.RestoreStaging
 import com.mrsep.musicrecognizer.feature.recognition.service.RecognitionControlActivity
 import com.mrsep.musicrecognizer.feature.recognition.service.ResultNotificationHelper
@@ -25,6 +28,7 @@ import com.mrsep.musicrecognizer.feature.recognition.service.ServiceNotification
 import com.mrsep.musicrecognizer.presentation.MainActivity
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.acra.ACRA
 import org.acra.ACRAConstants
@@ -35,6 +39,7 @@ import org.acra.ktx.initAcra
 import javax.inject.Inject
 import com.mrsep.musicrecognizer.core.strings.R as StringsR
 import com.mrsep.musicrecognizer.core.ui.R as UiR
+import androidx.core.net.toUri
 
 @HiltAndroidApp
 class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configuration.Provider {
@@ -45,6 +50,10 @@ class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configur
     lateinit var workerFactory: HiltWorkerFactory
     @Inject
     lateinit var audioRecordingDataSource: AudioRecordingDataSource
+    @Inject
+    lateinit var autoBackupScheduler: AutoBackupScheduler
+    @Inject
+    lateinit var preferencesRepository: PreferencesRepository
     @Inject
     @ApplicationScope
     lateinit var appScope: CoroutineScope
@@ -69,6 +78,7 @@ class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configur
         cleanup()
         createNotificationChannels()
         createShortcuts()
+        ensureAutoBackupSchedule()
     }
 
     override fun newImageLoader(context: Context): ImageLoader = imageLoader.get()
@@ -79,6 +89,20 @@ class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configur
         }
     }
 
+    private fun ensureAutoBackupSchedule() {
+        appScope.launch {
+            val autoBackup = preferencesRepository.userPreferencesFlow.first().autoBackup
+            if (autoBackup.enabled) {
+                autoBackupScheduler.ensureScheduled(
+                    autoBackup.intervalDays,
+                    autoBackup.treeUri.toUri(),
+                )
+            } else {
+                autoBackupScheduler.cancel()
+            }
+        }
+    }
+
     private fun createNotificationChannels() {
         getSystemService<NotificationManager>()?.createNotificationChannels(
             listOf(
@@ -86,6 +110,7 @@ class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configur
                 ResultNotificationHelper.getChannelForBackgroundRecognitionResult(this),
                 ResultNotificationHelper.getChannelForForegroundRecognitionResult(this),
                 ResultNotificationHelper.getChannelForScheduledRecognitionResult(this),
+                BackupNotificationHelper.getChannelForBackup(this),
             )
         )
     }

@@ -2,14 +2,22 @@ package com.mrsep.musicrecognizer.feature.backup.presentation
 
 import android.net.Uri
 import androidx.compose.runtime.Stable
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mrsep.musicrecognizer.core.common.di.IoDispatcher
+import com.mrsep.musicrecognizer.core.common.util.AppDateTimeFormatter
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupPreferences
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupResult
 import com.mrsep.musicrecognizer.core.domain.preferences.FavoritesMode
+import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
 import com.mrsep.musicrecognizer.core.domain.track.model.MusicService
 import com.mrsep.musicrecognizer.feature.backup.AppBackupManager
 import com.mrsep.musicrecognizer.feature.backup.AppRestartManager
+import com.mrsep.musicrecognizer.feature.backup.AutoBackupScheduler
 import com.mrsep.musicrecognizer.feature.backup.BackupEntry
 import com.mrsep.musicrecognizer.feature.backup.BackupMetadataResult
+import com.mrsep.musicrecognizer.feature.backup.BackupNotificationHelper
 import com.mrsep.musicrecognizer.feature.backup.BackupResult
 import com.mrsep.musicrecognizer.feature.backup.CsvExportParams
 import com.mrsep.musicrecognizer.feature.backup.CsvExporter
@@ -18,20 +26,38 @@ import com.mrsep.musicrecognizer.feature.backup.ExportResult
 import com.mrsep.musicrecognizer.feature.backup.RestoreResult
 import com.mrsep.musicrecognizer.feature.backup.TrackField
 import com.mrsep.musicrecognizer.feature.backup.TrackLinkField
+import com.mrsep.musicrecognizer.feature.backup.data.BackupTreeDocuments
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import javax.inject.Inject
 
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class BackupRestoreViewModel @Inject constructor(
     private val appBackupManager: AppBackupManager,
     private val appRestartManager: AppRestartManager,
     private val csvExporter: CsvExporter,
+    private val preferencesRepository: PreferencesRepository,
+    private val autoBackupScheduler: AutoBackupScheduler,
+    private val treeDocuments: BackupTreeDocuments,
+    private val dateTimeFormatter: AppDateTimeFormatter,
+    private val backupNotificationHelper: BackupNotificationHelper,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val _backupUiState = MutableStateFlow<BackupUiState?>(null)
@@ -42,6 +68,48 @@ internal class BackupRestoreViewModel @Inject constructor(
 
     private val _csvExportUiState = MutableStateFlow<CsvExportUiState?>(null)
     val csvExportUiState = _csvExportUiState.asStateFlow()
+
+    private val _events = Channel<BackupRestoreEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
+
+    // Keep slow SAF related query separated
+    private val currentAutoBackupTreeUri = MutableStateFlow<String?>(null)
+    private val autoBackupLocationName = currentAutoBackupTreeUri
+        .mapLatest { uriString ->
+            uriString?.takeIf { it.isNotEmpty() }?.toUri()?.let { treeUri ->
+                treeDocuments.friendlyName(treeUri)
+            }
+        }
+        .flowOn(ioDispatcher)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            null
+        )
+
+    val autoBackupUiState = combine(
+        preferencesRepository.userPreferencesFlow,
+        autoBackupScheduler.isAutoBackupRunning(),
+        autoBackupLocationName,
+    ) { preferences, isRunning, locationName ->
+        val uri = preferences.autoBackup.treeUri
+        val name = locationName.takeIf { currentAutoBackupTreeUri.value == uri }
+        currentAutoBackupTreeUri.value = uri
+        AutoBackupUiState.Ready(
+            preferences = preferences.autoBackup,
+            lastResult = preferences.autoBackupLastResult,
+            isRunning = isRunning,
+            hasWritePermission = uri.takeIf { it.isNotEmpty() }?.toUri()
+                ?.let(treeDocuments::hasWritePermission) ?: false,
+            locationName = name,
+        )
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        AutoBackupUiState.Loading,
+    )
+
+    val dateFormatter: AppDateTimeFormatter get() = dateTimeFormatter
 
     private val backupMasterJob = SupervisorJob()
     private val backupScope = viewModelScope + backupMasterJob
@@ -184,6 +252,106 @@ internal class BackupRestoreViewModel @Inject constructor(
             _csvExportUiState.value = null
         }
     }
+
+    /* Automatic backup */
+
+    fun enableAutoBackup() {
+        viewModelScope.launch {
+            val autoBackup = preferencesRepository.userPreferencesFlow.first().autoBackup
+            if (autoBackup.treeUri.isEmpty()) return@launch
+            preferencesRepository.setAutoBackupLastResult(null)
+            backupNotificationHelper.cancelFailure()
+            preferencesRepository.setAutoBackupEnabled(true)
+            autoBackupScheduler.schedule(autoBackup.intervalDays, autoBackup.treeUri.toUri())
+        }
+    }
+
+    fun disableAutoBackup() {
+        viewModelScope.launch {
+            preferencesRepository.setAutoBackupLastResult(null)
+            backupNotificationHelper.cancelFailure()
+            preferencesRepository.setAutoBackupEnabled(false)
+            autoBackupScheduler.cancel()
+        }
+    }
+
+    fun onBackupTreePicked(uri: Uri, enable: Boolean) {
+        viewModelScope.launch(ioDispatcher) {
+            if (!treeDocuments.takePersistableWritePermission(uri)) {
+                _events.send(BackupRestoreEvent.PersistableUriPermissionDenied)
+                return@launch
+            }
+            val autoBackup = preferencesRepository.userPreferencesFlow.first().autoBackup
+            val oldUri = autoBackup.treeUri
+            preferencesRepository.setAutoBackupTreeUri(uri.toString())
+            if (oldUri.isNotEmpty() && oldUri != uri.toString()) {
+                treeDocuments.releasePersistableWritePermission(oldUri.toUri())
+            }
+            when {
+                enable -> {
+                    preferencesRepository.setAutoBackupLastResult(null)
+                    backupNotificationHelper.cancelFailure()
+                    preferencesRepository.setAutoBackupEnabled(true)
+                    autoBackupScheduler.schedule(autoBackup.intervalDays, uri)
+                }
+                autoBackup.enabled -> {
+                    autoBackupScheduler.schedule(autoBackup.intervalDays, uri)
+                }
+            }
+        }
+    }
+
+    fun setAutoBackupIntervalDays(days: Int) {
+        viewModelScope.launch {
+            preferencesRepository.setAutoBackupIntervalDays(days)
+            val autoBackup = preferencesRepository.userPreferencesFlow.first().autoBackup
+            if (autoBackup.enabled) {
+                autoBackupScheduler.schedule(days, autoBackup.treeUri.toUri())
+            }
+        }
+    }
+
+    fun setAutoBackupKeepCount(keepCount: Int) {
+        viewModelScope.launch {
+            preferencesRepository.setAutoBackupKeepCount(keepCount)
+        }
+    }
+
+    fun resetLastAutoBackupResult() {
+        viewModelScope.launch {
+            preferencesRepository.setAutoBackupLastResult(null)
+            backupNotificationHelper.cancelFailure()
+        }
+    }
+}
+
+internal sealed class BackupRestoreEvent {
+    data object PersistableUriPermissionDenied : BackupRestoreEvent()
+}
+
+@Stable
+internal sealed class AutoBackupUiState {
+    data object Loading : AutoBackupUiState()
+
+    data class Ready(
+        val preferences: AutoBackupPreferences,
+        val lastResult: AutoBackupResult?,
+        val isRunning: Boolean,
+        val hasWritePermission: Boolean,
+        val locationName: String?,
+    ) : AutoBackupUiState()
+}
+
+internal fun AutoBackupUiState.Ready.shouldShowError(): Boolean {
+    return !isRunning && lastResult is AutoBackupResult.Failure
+}
+
+internal fun AutoBackupUiState.Ready.shouldShowStatus(): Boolean {
+    return preferences.enabled || shouldShowError()
+}
+
+internal fun AutoBackupUiState.Ready.needsTreePickerToEnable(): Boolean {
+    return preferences.treeUri.isEmpty() || !hasWritePermission
 }
 
 @Stable

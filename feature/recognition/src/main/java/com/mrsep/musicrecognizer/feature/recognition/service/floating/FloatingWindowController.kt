@@ -15,7 +15,7 @@ import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.defau
 import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
 import com.mrsep.musicrecognizer.core.domain.recognition.TrackMetadataFetchManager
 import com.mrsep.musicrecognizer.core.domain.track.TrackRepository
-import com.mrsep.musicrecognizer.feature.recognition.DeeplinkRouter
+import com.mrsep.musicrecognizer.core.common.DeeplinkRouter
 import com.mrsep.musicrecognizer.feature.recognition.RecognitionStatusHolder
 import com.mrsep.musicrecognizer.feature.recognition.di.FloatingButtonStatusHolder
 import com.mrsep.musicrecognizer.feature.recognition.platform.VibrationManager

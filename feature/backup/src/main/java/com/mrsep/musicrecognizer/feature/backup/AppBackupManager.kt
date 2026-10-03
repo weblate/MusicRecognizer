@@ -25,6 +25,8 @@ internal enum class BackupEntry { Data, Preferences }
 internal data class BackupMetadata(
     @SerialName("backupSignature")
     val backupSignature: String,
+    @SerialName("formatVersion")
+    val formatVersion: Int = 1,
     @SerialName("appVersionCode")
     val appVersionCode: Int,
     @SerialName("creationDate")

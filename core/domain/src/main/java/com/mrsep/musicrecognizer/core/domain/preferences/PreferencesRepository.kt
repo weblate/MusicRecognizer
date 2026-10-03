@@ -34,4 +34,9 @@ interface PreferencesRepository {
     suspend fun setShowCreationDateInQueue(value: Boolean)
     suspend fun setThemeMode(value: ThemeMode)
     suspend fun setUsePureBlackForDarkTheme(value: Boolean)
+    suspend fun setAutoBackupEnabled(value: Boolean)
+    suspend fun setAutoBackupTreeUri(value: String)
+    suspend fun setAutoBackupIntervalDays(value: Int)
+    suspend fun setAutoBackupKeepCount(value: Int)
+    suspend fun setAutoBackupLastResult(result: AutoBackupResult?)
 }

@@ -5,9 +5,10 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.net.Uri
 import androidx.core.net.toUri
+import com.mrsep.musicrecognizer.feature.backup.presentation.BackupRestoreScreenNavigation
 import com.mrsep.musicrecognizer.feature.library.presentation.library.LibraryScreen
 import com.mrsep.musicrecognizer.feature.recognition.presentation.queuescreen.RecognitionQueueScreen
-import com.mrsep.musicrecognizer.feature.recognition.DeeplinkRouter
+import com.mrsep.musicrecognizer.core.common.DeeplinkRouter
 import com.mrsep.musicrecognizer.feature.track.presentation.lyrics.LyricsScreen
 import com.mrsep.musicrecognizer.feature.track.presentation.track.TrackScreen
 import com.mrsep.musicrecognizer.presentation.MainActivity
@@ -32,6 +33,10 @@ class AppDeeplinkRouter @Inject constructor(
 
     override fun getDeepLinkIntentToQueue(): Intent {
         return getDeepLinkIntent(RecognitionQueueScreen.createDeepLink().toUri())
+    }
+
+    override fun getDeepLinkIntentToBackupRestore(): Intent {
+        return getDeepLinkIntent(BackupRestoreScreenNavigation.createDeepLink().toUri())
     }
 
     private fun getDeepLinkIntent(uri: Uri): Intent {

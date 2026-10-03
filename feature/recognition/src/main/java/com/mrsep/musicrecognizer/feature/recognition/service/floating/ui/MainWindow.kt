@@ -59,7 +59,7 @@ import com.mrsep.musicrecognizer.core.ui.theme.MusicRecognizerTheme
 import com.mrsep.musicrecognizer.core.ui.theme.SwitchingMusicRecognizerTheme
 import com.mrsep.musicrecognizer.core.ui.util.centeredIconPainter
 import com.mrsep.musicrecognizer.core.ui.util.copyTextToClipboard
-import com.mrsep.musicrecognizer.feature.recognition.DeeplinkRouter
+import com.mrsep.musicrecognizer.core.common.DeeplinkRouter
 import com.mrsep.musicrecognizer.feature.recognition.presentation.recognitionscreen.RippleEffect
 import com.mrsep.musicrecognizer.feature.recognition.service.RecognitionControlService
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.FloatingWindowSharedModel

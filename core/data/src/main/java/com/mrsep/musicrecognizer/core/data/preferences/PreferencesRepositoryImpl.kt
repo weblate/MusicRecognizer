@@ -11,6 +11,8 @@ import com.mrsep.musicrecognizer.core.data.PersistentStoreLock
 import com.mrsep.musicrecognizer.core.domain.preferences.AcrCloudConfig
 import com.mrsep.musicrecognizer.core.domain.preferences.AuddConfig
 import com.mrsep.musicrecognizer.core.domain.preferences.AudioCaptureMode
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupPreferences
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupResult
 import com.mrsep.musicrecognizer.core.domain.preferences.FallbackPolicy
 import com.mrsep.musicrecognizer.core.domain.preferences.HapticFeedback
 import com.mrsep.musicrecognizer.core.domain.preferences.LyricsStyle
@@ -150,6 +152,47 @@ internal class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun setUsePureBlackForDarkTheme(value: Boolean) {
         safeWriter { usePureBlackForDarkTheme = value }
+    }
+
+    override suspend fun setAutoBackupEnabled(value: Boolean) {
+        safeWriter {
+            autoBackup = autoBackup.copy { enabled = value }
+        }
+    }
+
+    override suspend fun setAutoBackupTreeUri(value: String) {
+        safeWriter {
+            autoBackup = autoBackup.copy { treeUri = value }
+        }
+    }
+
+    override suspend fun setAutoBackupIntervalDays(value: Int) {
+        if (value !in AutoBackupPreferences.INTERVAL_DAYS) return
+        safeWriter {
+            autoBackup = autoBackup.copy { intervalDays = value }
+        }
+    }
+
+    override suspend fun setAutoBackupKeepCount(value: Int) {
+        if (value !in AutoBackupPreferences.KEEP_COUNTS) return
+        safeWriter {
+            autoBackup = autoBackup.copy { keepCount = value }
+        }
+    }
+
+    override suspend fun setAutoBackupLastResult(result: AutoBackupResult?) {
+        safeWriter {
+            if (result == null) {
+                clearLastAutoBackupResult()
+                autoBackupConsecutiveFailures = 0
+            } else {
+                lastAutoBackupResult = result.toProto()
+                when (result) {
+                    is AutoBackupResult.Success -> autoBackupConsecutiveFailures = 0
+                    is AutoBackupResult.Failure -> autoBackupConsecutiveFailures += 1
+                }
+            }
+        }
     }
 
     private fun Flow<UserPreferencesProto>.ioExceptionCatcherOnRead(): Flow<UserPreferencesProto> {

@@ -1,6 +1,10 @@
 package com.mrsep.musicrecognizer.core.data.preferences
 
 import com.mrsep.musicrecognizer.core.datastore.AudioCaptureModeProto
+import com.mrsep.musicrecognizer.core.datastore.AutoBackupErrorTypeProto
+import com.mrsep.musicrecognizer.core.datastore.autoBackupFailureProto
+import com.mrsep.musicrecognizer.core.datastore.autoBackupResultProto
+import com.mrsep.musicrecognizer.core.datastore.autoBackupSuccessProto
 import com.mrsep.musicrecognizer.core.datastore.MusicServiceProto
 import com.mrsep.musicrecognizer.core.datastore.RecognitionProviderProto
 import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto.FallbackActionProto
@@ -16,6 +20,8 @@ import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProtoKt.trackFilt
 import com.mrsep.musicrecognizer.core.datastore.acrCloudConfigProto
 import com.mrsep.musicrecognizer.core.domain.preferences.AcrCloudConfig
 import com.mrsep.musicrecognizer.core.domain.preferences.AudioCaptureMode
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupError
+import com.mrsep.musicrecognizer.core.domain.preferences.AutoBackupResult
 import com.mrsep.musicrecognizer.core.domain.preferences.FallbackAction
 import com.mrsep.musicrecognizer.core.domain.preferences.FallbackPolicy
 import com.mrsep.musicrecognizer.core.domain.preferences.FavoritesMode
@@ -122,4 +128,25 @@ internal fun TrackFilter.toProto() = trackFilterProto {
 internal fun HapticFeedback.toProto() = hapticFeedbackProto {
     vibrateOnTap = this@toProto.vibrateOnTap
     vibrateOnResult = this@toProto.vibrateOnResult
+}
+
+internal fun AutoBackupResult.toProto() = autoBackupResultProto {
+    timestampEpochMilli = timestamp.toEpochMilli()
+    when (val result = this@toProto) {
+        is AutoBackupResult.Success -> {
+            success = autoBackupSuccessProto {}
+        }
+        is AutoBackupResult.Failure -> {
+            failure = autoBackupFailureProto {
+                kind = result.reason.toProto()
+                message = result.message.orEmpty()
+            }
+        }
+    }
+}
+
+internal fun AutoBackupError.toProto() = when (this) {
+    AutoBackupError.AccessDenied -> AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_ACCESS_DENIED
+    AutoBackupError.FileNotFound -> AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_FILE_NOT_FOUND
+    AutoBackupError.Unhandled -> AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_UNHANDLED
 }

@@ -36,6 +36,7 @@ internal object DatastoreModule {
             ),
             migrations = listOf(
                 RequiredMusicServicesMigration,
+                AutoBackupPreferencesMigration,
             ),
             scope = CoroutineScope(appScope.coroutineContext + ioDispatcher),
             produceFile = { appContext.dataStoreFile(USER_PREFERENCES_STORE) }

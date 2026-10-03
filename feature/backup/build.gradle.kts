@@ -17,7 +17,10 @@ dependencies {
 
     implementation(libs.kotlinx.serializationJson)
     implementation(libs.coil.compose)
+    implementation(libs.accompanist.permissions)
     implementation(libs.csv)
     implementation(libs.reorderable)
     implementation(libs.androidx.workKtx)
+    implementation(libs.hilt.ext.work)
+    ksp(libs.hilt.ext.compiler)
 }

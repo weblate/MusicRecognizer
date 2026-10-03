@@ -1,6 +1,7 @@
 package com.mrsep.musicrecognizer.feature.backup
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import com.mrsep.musicrecognizer.core.data.enqueued.AudioSampleFiles
 import com.mrsep.musicrecognizer.core.database.ApplicationDatabase
@@ -18,6 +19,8 @@ object RestoreStaging {
     private const val FLAG_STAGING_READY = "restore_staging_ready"
     private const val STAGING_DIR = "restore_staging"
     private const val RECORDINGS_DIR = "audio_recordings"
+    private const val PERSISTABLE_URI_FLAGS =
+        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 
     fun recoverIfNeeded(context: Context) {
         val inProgressFlagFile = flagFileInProgress(context)
@@ -70,7 +73,19 @@ object RestoreStaging {
         if (BackupEntry.Preferences in entries) {
             val stagedPrefs = stagingPreferencesFile(context)
             if (stagedPrefs.exists()) {
+                releasePersistedUriPermissions(context)
                 replaceFile(stagedPrefs, context.dataStoreFile(USER_PREFERENCES_STORE))
+            }
+        }
+    }
+
+    private fun releasePersistedUriPermissions(context: Context) {
+        val resolver = context.contentResolver
+        resolver.persistedUriPermissions.forEach { permission ->
+            try {
+                resolver.releasePersistableUriPermission(permission.uri, PERSISTABLE_URI_FLAGS)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to release persistable URI permission ${permission.uri}", e)
             }
         }
     }

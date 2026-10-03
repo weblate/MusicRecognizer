@@ -1,4 +1,4 @@
-package com.mrsep.musicrecognizer.feature.recognition
+package com.mrsep.musicrecognizer.core.common
 
 import android.content.Intent
 
@@ -11,4 +11,6 @@ interface DeeplinkRouter {
     fun getDeepLinkIntentToLibrary(): Intent
 
     fun getDeepLinkIntentToQueue(): Intent
+
+    fun getDeepLinkIntentToBackupRestore(): Intent
 }
