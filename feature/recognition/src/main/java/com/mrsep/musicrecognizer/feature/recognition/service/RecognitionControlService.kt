@@ -386,13 +386,16 @@ class RecognitionControlService : Service() {
                         if (recognitionResult is RecognitionResult.Success) {
                             prepareTrackImages(recognitionResult.track)
                         }
+                        val preferences = preferencesRepository.userPreferencesFlow.first()
                         val isScreenUpdated = screenStatusHolder.updateStatusIfObserving(status)
                         if (isScreenUpdated) {
                             floatingButtonStatusHolder.updateStatus(RecognitionStatus.Ready)
                             widgetStatusHolder.updateStatus(RecognitionStatus.Ready)
                             resultNotificationHelper.notifyForegroundResult(status.result, usedAudioCaptureMode)
                         } else {
-                            val isFloatingButtonUpdated = floatingButtonStatusHolder.updateStatusIfObserving(status)
+                            val isFloatingButtonUpdated = preferences.notificationServiceEnabled &&
+                                    preferences.floatingButtonEnabled &&
+                                    floatingButtonStatusHolder.updateStatusIfObserving(status)
                             if (!isFloatingButtonUpdated) {
                                 floatingButtonStatusHolder.updateStatus(RecognitionStatus.Ready)
                             }
