@@ -17,6 +17,7 @@ import com.mrsep.musicrecognizer.core.domain.preferences.FallbackPolicy
 import com.mrsep.musicrecognizer.core.domain.preferences.HapticFeedback
 import com.mrsep.musicrecognizer.core.domain.preferences.LyricsStyle
 import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
+import com.mrsep.musicrecognizer.core.domain.preferences.SnappedWindowPosition
 import com.mrsep.musicrecognizer.core.domain.preferences.ThemeMode
 import com.mrsep.musicrecognizer.core.domain.preferences.TrackFilter
 import com.mrsep.musicrecognizer.core.domain.preferences.UserPreferences
@@ -98,6 +99,10 @@ internal class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun setFloatingButtonEnabled(value: Boolean) {
         safeWriter { floatingButtonEnabled = value }
+    }
+
+    override suspend fun setFloatingButtonPosition(value: SnappedWindowPosition) {
+        safeWriter { floatingButtonPosition = value.toProto() }
     }
 
     override suspend fun setDynamicColorsEnabled(value: Boolean) {

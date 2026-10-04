@@ -19,6 +19,7 @@ data class UserPreferences(
     val requiredMusicServices: List<MusicService>,
     val notificationServiceEnabled: Boolean,
     val floatingButtonEnabled: Boolean,
+    val floatingButtonPosition: SnappedWindowPosition,
     val dynamicColorsEnabled: Boolean,
     val artworkBasedThemeEnabled: Boolean,
     val lyricsStyle: LyricsStyle,

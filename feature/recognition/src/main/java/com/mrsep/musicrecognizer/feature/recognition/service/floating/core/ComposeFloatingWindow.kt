@@ -34,6 +34,8 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.mrsep.musicrecognizer.core.domain.preferences.ScreenSide
+import com.mrsep.musicrecognizer.core.domain.preferences.SnappedWindowPosition
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -244,19 +246,20 @@ internal class ComposeFloatingWindow internal constructor(
 
 
     // State for two-stage attach
-    private var pendingSnapState: WindowSnapState? = null
+    private var pendingSnappedPosition: SnappedWindowPosition? = null
     private var pendingHidden: Boolean = false
     private var pendingShowRequest: Boolean = false
 
     /**
      * Shows the floating window.
      *
-     * @param snapState Optional. The physical state (side and fraction) to position the window at.
-     * If null, the window will retain its current coordinates (or 0,0 if not previously positioned).
+     * @param snappedPosition Optional. Edge-snapped position (screen side and vertical fraction)
+     * to place the window at. If null, the window keeps its current coordinates
+     * (or 0,0 if it has not been positioned yet).
      * @param hidden If true, forces the window to be attached (reserving its z-order) but switches it to [View.GONE]
      * after coordinates are calculated. If false, makes it visible with enter animation.
      */
-    fun show(snapState: WindowSnapState? = null, hidden: Boolean = false) {
+    fun show(snappedPosition: SnappedWindowPosition? = null, hidden: Boolean = false) {
         checkDestroyed()
 
         require(composeView != null) {
@@ -270,7 +273,7 @@ internal class ComposeFloatingWindow internal constructor(
 
         Log.d(tag, "Showing floating window")
 
-        pendingSnapState = snapState
+        pendingSnappedPosition = snappedPosition
         pendingHidden = hidden
         pendingShowRequest = true
 
@@ -320,12 +323,19 @@ internal class ComposeFloatingWindow internal constructor(
         // Prevent calculation with zero dimensions
         if (width <= 0 || height <= 0) return
 
-        // 1 - Calculate and apply coordinates only if a new snapState is provided
-        pendingSnapState?.let { snapState ->
-            val (x, y) = calculateWindowPositionForState(snapState)
+        // 1 - Calculate and apply coordinates only if a new snapped position is provided
+        pendingSnappedPosition?.let { snappedPosition ->
+            val (x, y) = calculateWindowPosition(
+                snappedPosition = snappedPosition,
+                targetGravity = windowParams.gravity,
+                displayWidth = windowMaxAvailableWidth,
+                displayHeight = windowMaxAvailableHeight,
+                windowWidth = currentWindowWidth,
+                windowHeight = currentWindowHeight
+            )
             windowParams.x = x
             windowParams.y = y
-            pendingSnapState = null
+            pendingSnappedPosition = null
         }
 
         val isHidden = pendingHidden
@@ -588,18 +598,18 @@ internal class ComposeFloatingWindow internal constructor(
         }
     }
 
-    // --- Window positioning & Snap state ---
+    // --- Window positioning ---
 
-    val currentWindowSide: WindowSide
-        get() = calculateWindowSide(
+    val currentScreenSide: ScreenSide
+        get() = calculateScreenSide(
             currentX = windowParams.x,
             currentGravity = windowParams.gravity,
             displayWidth = windowMaxAvailableWidth,
             windowWidth = currentWindowWidth
         )
 
-    val currentWindowSnapState: WindowSnapState
-        get() = calculateWindowSnapState(
+    val currentSnappedPosition: SnappedWindowPosition
+        get() = calculateSnappedWindowPosition(
             currentX = windowParams.x,
             currentY = windowParams.y,
             currentGravity = windowParams.gravity,
@@ -609,8 +619,8 @@ internal class ComposeFloatingWindow internal constructor(
             windowHeight = currentWindowHeight,
         )
 
-    val currentStrictWindowSnapState: WindowSnapState?
-        get() = calculateStrictWindowSnapState(
+    val currentStrictSnappedPosition: SnappedWindowPosition?
+        get() = calculateStrictSnappedWindowPosition(
             currentX = windowParams.x,
             currentY = windowParams.y,
             currentGravity = windowParams.gravity,
@@ -619,17 +629,6 @@ internal class ComposeFloatingWindow internal constructor(
             windowWidth = currentWindowWidth,
             windowHeight = currentWindowHeight,
         )
-
-    fun calculateWindowPositionForState(snapState: WindowSnapState): Pair<Int, Int> {
-        return calculateWindowPosition(
-            snapState = snapState,
-            targetGravity = windowParams.gravity,
-            displayWidth = windowMaxAvailableWidth,
-            displayHeight = windowMaxAvailableHeight,
-            windowWidth = currentWindowWidth,
-            windowHeight = currentWindowHeight
-        )
-    }
 }
 
 @SuppressLint("ViewConstructor")

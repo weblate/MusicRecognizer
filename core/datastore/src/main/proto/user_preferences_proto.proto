@@ -140,7 +140,9 @@ message UserPreferencesProto {
   AutoBackupResultProto last_auto_backup_result = 53;
   int32 auto_backup_consecutive_failures = 54;
 
-  // NEXT AVAILABLE ID: 55
+  SnappedWindowPositionProto floating_button_position = 55;
+
+  // NEXT AVAILABLE ID: 56
 
 }
 
@@ -171,4 +173,14 @@ enum AutoBackupErrorTypeProto {
   AUTO_BACKUP_ERROR_ACCESS_DENIED = 1;
   AUTO_BACKUP_ERROR_FILE_NOT_FOUND = 2;
   AUTO_BACKUP_ERROR_UNHANDLED = 3;
+}
+
+enum ScreenSideProto {
+  Left = 0;
+  Right = 1;
+}
+
+message SnappedWindowPositionProto {
+  ScreenSideProto side = 1;
+  float fraction_y = 2;
 }

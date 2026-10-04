@@ -7,6 +7,8 @@ import com.mrsep.musicrecognizer.core.datastore.autoBackupResultProto
 import com.mrsep.musicrecognizer.core.datastore.autoBackupSuccessProto
 import com.mrsep.musicrecognizer.core.datastore.MusicServiceProto
 import com.mrsep.musicrecognizer.core.datastore.RecognitionProviderProto
+import com.mrsep.musicrecognizer.core.datastore.ScreenSideProto
+import com.mrsep.musicrecognizer.core.datastore.snappedWindowPositionProto
 import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto.FallbackActionProto
 import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto.FavoritesModeProto
 import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto.FontSizeProto
@@ -29,6 +31,8 @@ import com.mrsep.musicrecognizer.core.domain.preferences.FontSize
 import com.mrsep.musicrecognizer.core.domain.preferences.HapticFeedback
 import com.mrsep.musicrecognizer.core.domain.preferences.LyricsStyle
 import com.mrsep.musicrecognizer.core.domain.preferences.OrderBy
+import com.mrsep.musicrecognizer.core.domain.preferences.ScreenSide
+import com.mrsep.musicrecognizer.core.domain.preferences.SnappedWindowPosition
 import com.mrsep.musicrecognizer.core.domain.preferences.SortBy
 import com.mrsep.musicrecognizer.core.domain.preferences.ThemeMode
 import com.mrsep.musicrecognizer.core.domain.preferences.TrackFilter
@@ -149,4 +153,14 @@ internal fun AutoBackupError.toProto() = when (this) {
     AutoBackupError.AccessDenied -> AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_ACCESS_DENIED
     AutoBackupError.FileNotFound -> AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_FILE_NOT_FOUND
     AutoBackupError.Unhandled -> AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_UNHANDLED
+}
+
+internal fun SnappedWindowPosition.toProto() = snappedWindowPositionProto {
+    side = this@toProto.side.toProto()
+    fractionY = this@toProto.fractionY
+}
+
+internal fun ScreenSide.toProto() = when (this) {
+    ScreenSide.Left -> ScreenSideProto.Left
+    ScreenSide.Right -> ScreenSideProto.Right
 }

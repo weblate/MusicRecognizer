@@ -65,6 +65,10 @@ internal object UserPreferencesProtoSerializer : Serializer<UserPreferencesProto
             )
             notificationServiceEnabled = false
             floatingButtonEnabled = false
+            floatingButtonPosition = snappedWindowPositionProto {
+                side = ScreenSideProto.Right
+                fractionY = 0.4f
+            }
             dynamicColorsEnabled = true
             artworkBasedThemeEnabled = true
             useGridForLibrary = false

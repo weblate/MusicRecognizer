@@ -1,28 +1,16 @@
 package com.mrsep.musicrecognizer.feature.recognition.service.floating.core
 
 import android.view.Gravity
-
-internal enum class WindowSide {
-    LEFT,
-    RIGHT,
-}
-
-internal data class WindowSnapState(
-    val side: WindowSide,
-    val fractionY: Float
-) {
-    init {
-        check(fractionY in 0f..1f)
-    }
-}
+import com.mrsep.musicrecognizer.core.domain.preferences.ScreenSide
+import com.mrsep.musicrecognizer.core.domain.preferences.SnappedWindowPosition
 
 /** Determines whether the window is currently on the left or right half of the screen. */
-internal fun calculateWindowSide(
+internal fun calculateScreenSide(
     currentX: Int,
     currentGravity: Int,
     displayWidth: Int,
     windowWidth: Int
-): WindowSide {
+): ScreenSide {
     val baseX = convertXForGravityChange(
         x = currentX,
         fromGravity = currentGravity,
@@ -31,11 +19,11 @@ internal fun calculateWindowSide(
         windowWidth = windowWidth
     )
     val maxX = maxOf(1, displayWidth - windowWidth)
-    return if (baseX < (maxX / 2)) WindowSide.LEFT else WindowSide.RIGHT
+    return if (baseX < (maxX / 2)) ScreenSide.Left else ScreenSide.Right
 }
 
-/** Calculates the complete snap state of the window (physical side and height fraction). */
-internal fun calculateWindowSnapState(
+/** Calculates the snapped window position (screen side and height fraction). */
+internal fun calculateSnappedWindowPosition(
     currentX: Int,
     currentY: Int,
     currentGravity: Int,
@@ -43,8 +31,8 @@ internal fun calculateWindowSnapState(
     displayHeight: Int,
     windowWidth: Int,
     windowHeight: Int
-): WindowSnapState {
-    val side = calculateWindowSide(
+): SnappedWindowPosition {
+    val side = calculateScreenSide(
         currentX = currentX,
         currentGravity = currentGravity,
         displayWidth = displayWidth,
@@ -59,16 +47,16 @@ internal fun calculateWindowSnapState(
     )
     val maxY = maxOf(1, displayHeight - windowHeight)
     val fractionY = (baseY.toFloat() / maxY).coerceIn(0f, 1f)
-    return WindowSnapState(side, fractionY)
+    return SnappedWindowPosition(side, fractionY)
 }
 
-/** Returns the side to which the window is strictly snapped, or null if it's not fully snapped. */
-internal fun calculateStrictWindowSide(
+/** Returns the screen side the window is strictly snapped to, or null if it is not fully snapped. */
+internal fun calculateStrictScreenSide(
     currentX: Int,
     currentGravity: Int,
     displayWidth: Int,
     windowWidth: Int
-): WindowSide? {
+): ScreenSide? {
     val baseX = convertXForGravityChange(
         x = currentX,
         fromGravity = currentGravity,
@@ -78,14 +66,17 @@ internal fun calculateStrictWindowSide(
     )
     val maxX = maxOf(1, displayWidth - windowWidth)
     return when {
-        baseX <= 0 -> WindowSide.LEFT
-        baseX >= maxX -> WindowSide.RIGHT
+        baseX <= 0 -> ScreenSide.Left
+        baseX >= maxX -> ScreenSide.Right
         else -> null
     }
 }
 
-/** Calculates the strict snap state. Returns null if the window is not strictly snapped to the left or right edge. */
-internal fun calculateStrictWindowSnapState(
+/**
+ * Calculates the snapped window position only if the window is strictly snapped to a screen edge.
+ * Returns null otherwise.
+ */
+internal fun calculateStrictSnappedWindowPosition(
     currentX: Int,
     currentY: Int,
     currentGravity: Int,
@@ -93,8 +84,8 @@ internal fun calculateStrictWindowSnapState(
     displayHeight: Int,
     windowWidth: Int,
     windowHeight: Int
-): WindowSnapState? {
-    val side = calculateStrictWindowSide(
+): SnappedWindowPosition? {
+    val side = calculateStrictScreenSide(
         currentX = currentX,
         currentGravity = currentGravity,
         displayWidth = displayWidth,
@@ -109,12 +100,12 @@ internal fun calculateStrictWindowSnapState(
     )
     val maxY = maxOf(1, displayHeight - windowHeight)
     val fractionY = (baseY.toFloat() / maxY).coerceIn(0f, 1f)
-    return WindowSnapState(side, fractionY)
+    return SnappedWindowPosition(side, fractionY)
 }
 
-/** Calculates the final X and Y coordinates to be set in WindowParams based on the snap state. */
+/** Calculates the final X and Y coordinates to be set in WindowParams from a snapped position. */
 internal fun calculateWindowPosition(
-    snapState: WindowSnapState,
+    snappedPosition: SnappedWindowPosition,
     targetGravity: Int,
     displayWidth: Int,
     displayHeight: Int,
@@ -124,8 +115,8 @@ internal fun calculateWindowPosition(
     val newMaxX = maxOf(1, displayWidth - windowWidth)
     val newMaxY = maxOf(1, displayHeight - windowHeight)
 
-    val newBaseX = if (snapState.side == WindowSide.LEFT) 0 else newMaxX
-    val newBaseY = (newMaxY * snapState.fractionY).toInt().coerceIn(0, newMaxY)
+    val newBaseX = if (snappedPosition.side == ScreenSide.Left) 0 else newMaxX
+    val newBaseY = (newMaxY * snappedPosition.fractionY).toInt().coerceIn(0, newMaxY)
 
     val finalX = convertXForGravityChange(
         x = newBaseX,

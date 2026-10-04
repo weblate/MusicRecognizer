@@ -22,6 +22,7 @@ interface PreferencesRepository {
     suspend fun setRecognizeOnStartup(value: Boolean)
     suspend fun setNotificationServiceEnabled(value: Boolean)
     suspend fun setFloatingButtonEnabled(value: Boolean)
+    suspend fun setFloatingButtonPosition(value: SnappedWindowPosition)
     suspend fun setDynamicColorsEnabled(value: Boolean)
     suspend fun setArtworkBasedThemeEnabled(value: Boolean)
     suspend fun setRequiredMusicServices(services: List<MusicService>)

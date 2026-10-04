@@ -9,18 +9,17 @@ import android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.ComposeFloatingWindow
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.WindowEnterAnimation
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.WindowExitAnimation
+import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.calculateSnappedWindowPosition
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.calculateWindowPosition
-import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.calculateWindowSnapState
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.defaultLayoutParams
 import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
+import com.mrsep.musicrecognizer.core.domain.preferences.ScreenSide
 import com.mrsep.musicrecognizer.core.domain.recognition.TrackMetadataFetchManager
 import com.mrsep.musicrecognizer.core.domain.track.TrackRepository
 import com.mrsep.musicrecognizer.core.common.DeeplinkRouter
 import com.mrsep.musicrecognizer.feature.recognition.RecognitionStatusHolder
 import com.mrsep.musicrecognizer.feature.recognition.di.FloatingButtonStatusHolder
 import com.mrsep.musicrecognizer.feature.recognition.platform.VibrationManager
-import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.WindowSide
-import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.WindowSnapState
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.convertXForGravityChange
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.core.convertYForGravityChange
 import com.mrsep.musicrecognizer.feature.recognition.service.floating.ui.DismissWindow
@@ -37,6 +36,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -50,7 +50,7 @@ private const val DismissWindowTag = "DismissFloatingWindow"
 internal class FloatingWindowController @Inject constructor(
     @ApplicationContext appContext: Context,
     trackRepository: TrackRepository,
-    preferencesRepository: PreferencesRepository,
+    private val preferencesRepository: PreferencesRepository,
     metadataFetchManager: TrackMetadataFetchManager,
     @FloatingButtonStatusHolder private val statusHolder: RecognitionStatusHolder,
     private val deeplinkRouter: DeeplinkRouter,
@@ -112,10 +112,7 @@ internal class FloatingWindowController @Inject constructor(
                 syncExtraWindowPosition()
             },
             onWindowPositionChanged = { _, _ ->
-                sharedModel.isLeftAnchored.value = when (mainWindow.currentWindowSide) {
-                    WindowSide.LEFT -> true
-                    WindowSide.RIGHT -> false
-                }
+                sharedModel.isLeftAnchored.value = mainWindow.currentScreenSide == ScreenSide.Left
                 syncExtraWindowPosition()
                 mainWindowPositionChangedSignal.trySend(Unit)
             },
@@ -178,14 +175,16 @@ internal class FloatingWindowController @Inject constructor(
         }
     }
 
-    fun show() {
+    suspend fun show() {
+        val snappedPosition = preferencesRepository.userPreferencesFlow.first().floatingButtonPosition
+        sharedModel.isLeftAnchored.value = snappedPosition.side == ScreenSide.Left
         // Prepare windows with specific z-order
         dismissWindow.show(hidden = true)
         if (!extraWindow.isShowing.value) {
             extraWindow.show()
         }
         if (!mainWindow.isShowing.value) {
-            mainWindow.show(snapState = lastSnapState ?: defaultSnapState)
+            mainWindow.show(snappedPosition = snappedPosition)
         }
     }
 
@@ -207,7 +206,9 @@ internal class FloatingWindowController @Inject constructor(
                 .drop(1) // Drop initial position signal
                 .debounce(500.milliseconds)
                 .collectLatest {
-                    mainWindow.currentStrictWindowSnapState?.let { lastSnapState = it }
+                    mainWindow.currentStrictSnappedPosition?.let { snappedPosition ->
+                        preferencesRepository.setFloatingButtonPosition(snappedPosition)
+                    }
                 }
         }
     }
@@ -218,8 +219,8 @@ internal class FloatingWindowController @Inject constructor(
         val windowWidth = mainWindow.decorView.measuredWidth
         val windowHeight = mainWindow.decorView.measuredHeight
 
-        // Capture the current window state with old screen dimensions
-        val currentSnapState = calculateWindowSnapState(
+        // Capture the current snapped position with old screen dimensions
+        val currentSnappedPosition = calculateSnappedWindowPosition(
             currentX = params.x,
             currentY = params.y,
             currentGravity = params.gravity,
@@ -235,7 +236,7 @@ internal class FloatingWindowController @Inject constructor(
         val safeInsets = mainWindow.display.safeInsets
 
         val (newX, newY) = calculateWindowPosition(
-            snapState = currentSnapState,
+            snappedPosition = currentSnappedPosition,
             targetGravity = params.gravity,
             displayWidth = newScreenWidth,
             displayHeight = newScreenHeight,
@@ -341,10 +342,5 @@ internal class FloatingWindowController @Inject constructor(
         )
 
         extraWindow.updateCoordinate(targetX, targetY)
-    }
-
-    companion object {
-        private val defaultSnapState get() = WindowSnapState(side = WindowSide.RIGHT, fractionY = 0.4f)
-        private var lastSnapState: WindowSnapState? = null
     }
 }

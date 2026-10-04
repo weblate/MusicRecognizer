@@ -6,6 +6,8 @@ import com.mrsep.musicrecognizer.core.datastore.AutoBackupErrorTypeProto
 import com.mrsep.musicrecognizer.core.datastore.AutoBackupResultProto
 import com.mrsep.musicrecognizer.core.datastore.MusicServiceProto
 import com.mrsep.musicrecognizer.core.datastore.RecognitionProviderProto
+import com.mrsep.musicrecognizer.core.datastore.ScreenSideProto
+import com.mrsep.musicrecognizer.core.datastore.SnappedWindowPositionProto
 import com.mrsep.musicrecognizer.core.datastore.UserPreferencesProto
 import com.mrsep.musicrecognizer.core.domain.preferences.AcrCloudConfig
 import com.mrsep.musicrecognizer.core.domain.preferences.AuddConfig
@@ -20,6 +22,8 @@ import com.mrsep.musicrecognizer.core.domain.preferences.FontSize
 import com.mrsep.musicrecognizer.core.domain.preferences.HapticFeedback
 import com.mrsep.musicrecognizer.core.domain.preferences.LyricsStyle
 import com.mrsep.musicrecognizer.core.domain.preferences.OrderBy
+import com.mrsep.musicrecognizer.core.domain.preferences.ScreenSide
+import com.mrsep.musicrecognizer.core.domain.preferences.SnappedWindowPosition
 import com.mrsep.musicrecognizer.core.domain.preferences.SortBy
 import com.mrsep.musicrecognizer.core.domain.preferences.ThemeMode
 import com.mrsep.musicrecognizer.core.domain.preferences.TrackFilter
@@ -84,6 +88,11 @@ internal fun UserPreferencesProto.toDomain() = UserPreferences(
     },
     notificationServiceEnabled = notificationServiceEnabled,
     floatingButtonEnabled = floatingButtonEnabled,
+    floatingButtonPosition = if (hasFloatingButtonPosition()) {
+        floatingButtonPosition.toDomain()
+    } else {
+        SnappedWindowPosition.getDefault()
+    },
     dynamicColorsEnabled = dynamicColorsEnabled,
     artworkBasedThemeEnabled = artworkBasedThemeEnabled,
     lyricsStyle = LyricsStyle(
@@ -197,3 +206,12 @@ internal fun AutoBackupErrorTypeProto.toDomain() = when (this) {
     AutoBackupErrorTypeProto.AUTO_BACKUP_ERROR_UNSPECIFIED,
     AutoBackupErrorTypeProto.UNRECOGNIZED -> AutoBackupError.Unhandled
 }
+
+internal fun SnappedWindowPositionProto.toDomain() = SnappedWindowPosition(
+    side = when (side) {
+        ScreenSideProto.Left -> ScreenSide.Left
+        ScreenSideProto.Right -> ScreenSide.Right
+        ScreenSideProto.UNRECOGNIZED -> error("Unexpected proto value")
+    },
+    fractionY = fractionY.coerceIn(0f, 1f)
+)
