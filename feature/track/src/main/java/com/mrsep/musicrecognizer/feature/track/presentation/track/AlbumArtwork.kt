@@ -2,7 +2,7 @@ package com.mrsep.musicrecognizer.feature.track.presentation.track
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +39,9 @@ internal fun AlbumArtwork(
     elevation: Dp,
     shape: Shape,
     onLoadedArtworkClick: (() -> Unit)? = null,
+    onLoadedArtworkClickLabel: String? = null,
+    onLoadedArtworkLongClick: (() -> Unit)? = null,
+    onLoadedArtworkLongClickLabel: String? = null,
     createSeedColor: Boolean,
     onSeedColorCreated: (Int) -> Unit,
 ) {
@@ -102,9 +105,12 @@ internal fun AlbumArtwork(
             )
             .then(
                 if (onLoadedArtworkClick != null) {
-                    Modifier.clickable(
+                    Modifier.combinedClickable(
                         enabled = painterState is AsyncImagePainter.State.Success,
-                        onClick = onLoadedArtworkClick
+                        onClick = onLoadedArtworkClick,
+                        onClickLabel = onLoadedArtworkClickLabel,
+                        onLongClick = onLoadedArtworkLongClick,
+                        onLongClickLabel = onLoadedArtworkLongClickLabel,
                     )
                 } else {
                     Modifier

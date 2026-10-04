@@ -89,10 +89,27 @@ fun Context.copyTextToClipboard(text: String) {
     }
 }
 
+fun Context.copyImageToClipboard(uri: Uri, mimeType: String = "image/jpg") {
+    val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clip = ClipData(
+        getString(StringsR.string.artwork),
+        arrayOf(mimeType),
+        ClipData.Item(uri)
+    )
+    clipboardManager.setPrimaryClip(clip)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        Toast.makeText(
+            this,
+            getString(StringsR.string.copied),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+}
+
 private fun Context.startActivityOrToast(intent: Intent, message: String) {
     try {
         startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
+    } catch (_: ActivityNotFoundException) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 }

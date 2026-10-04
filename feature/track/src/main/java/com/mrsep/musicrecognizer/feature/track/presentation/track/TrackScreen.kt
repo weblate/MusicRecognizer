@@ -19,11 +19,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrsep.musicrecognizer.core.domain.preferences.ThemeMode
@@ -34,8 +36,12 @@ import com.mrsep.musicrecognizer.core.ui.util.openUrlImplicitly
 import com.mrsep.musicrecognizer.core.ui.util.openWebSearchImplicitly
 import com.mrsep.musicrecognizer.core.ui.util.shareText
 import com.mrsep.musicrecognizer.core.ui.theme.SwitchingMusicRecognizerTheme
+import com.mrsep.musicrecognizer.core.ui.util.copyImageToClipboard
+import com.mrsep.musicrecognizer.feature.track.presentation.utils.ImageShareUtils.getImageFileForSharing
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.Locale
+import com.mrsep.musicrecognizer.core.strings.R as StringsR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,6 +144,7 @@ internal fun TrackScreen(
                                     onShowDetailsClick = { showTrackExtrasDialog = true },
                                     scrollBehavior = topBarBehaviour
                                 )
+                                var sharingJob by remember { mutableStateOf<Job?>(null) }
                                 TrackSection(
                                     track = uiState.track,
                                     isLoadingLinks = uiState.isTrackLinksFetcherRunning,
@@ -145,6 +152,21 @@ internal fun TrackScreen(
                                     onArtworkClick = {
                                         artworkShieldUrl = uiState.track.artworkUrl
                                     },
+                                    onArtworkClickLabel = stringResource(StringsR.string.show),
+                                    onArtworkLongClick = {
+                                        if (sharingJob?.isActive == true) return@TrackSection
+                                        val artworkUrl = uiState.track.artworkUrl ?: return@TrackSection
+                                        sharingJob = scope.launch {
+                                            val imageUri = getImageFileForSharing(
+                                                imageUrl = artworkUrl,
+                                                fileName = "artwork",
+                                                fileNameFallback = "artwork",
+                                                context = context
+                                            ) ?: return@launch
+                                            context.copyImageToClipboard(imageUri)
+                                        }
+                                    },
+                                    onArtworkLongClickLabel = stringResource(StringsR.string.copy),
                                     createSeedColor = uiState.artworkBasedThemeEnabled &&
                                             uiState.track.themeSeedColor == null,
                                     onSeedColorCreated = { seedColor ->

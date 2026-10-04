@@ -25,13 +25,16 @@ import kotlinx.collections.immutable.toImmutableList
 
 @Composable
 internal fun TrackSection(
+    modifier: Modifier = Modifier,
     track: TrackUi,
     isLoadingLinks: Boolean,
     isExpandedScreen: Boolean,
-    onArtworkClick: () -> Unit,
+    onArtworkClick: (() -> Unit)? = null,
+    onArtworkClickLabel: String?,
+    onArtworkLongClick: (() -> Unit)? = null,
+    onArtworkLongClickLabel: String?,
     createSeedColor: Boolean,
     onSeedColorCreated: (Int) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     if (isExpandedScreen) {
         Row(modifier = modifier) {
@@ -41,6 +44,9 @@ internal fun TrackSection(
                 elevation = 2.dp,
                 shape = MaterialTheme.shapes.extraLarge,
                 onLoadedArtworkClick = onArtworkClick,
+                onLoadedArtworkClickLabel = onArtworkClickLabel,
+                onLoadedArtworkLongClick = onArtworkLongClick,
+                onLoadedArtworkLongClickLabel = onArtworkLongClickLabel,
                 createSeedColor = createSeedColor,
                 onSeedColorCreated = onSeedColorCreated,
                 modifier = Modifier
@@ -81,6 +87,9 @@ internal fun TrackSection(
                 elevation = 2.dp,
                 shape = MaterialTheme.shapes.extraLarge,
                 onLoadedArtworkClick = onArtworkClick,
+                onLoadedArtworkClickLabel = onArtworkClickLabel,
+                onLoadedArtworkLongClick = onArtworkLongClick,
+                onLoadedArtworkLongClickLabel = onArtworkLongClickLabel,
                 createSeedColor = createSeedColor,
                 onSeedColorCreated = onSeedColorCreated,
                 modifier = Modifier
@@ -139,6 +148,9 @@ private fun Preview() {
             isLoadingLinks = false,
             isExpandedScreen = true,
             onArtworkClick = {},
+            onArtworkLongClick = {},
+            onArtworkClickLabel = null,
+            onArtworkLongClickLabel = null,
             createSeedColor = false,
             onSeedColorCreated = {},
             modifier = Modifier.verticalScroll(rememberScrollState())
