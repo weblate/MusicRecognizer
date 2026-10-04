@@ -16,7 +16,7 @@ cargo install cargo-ndk@4.1.2 --locked
 
 ### Install the required Android NDK version
 
-The app uses NDK version **29.0.14206865**.
+The app uses NDK version **30.0.16248370**.
 
 If you use Android Studio, you can install the NDK from **Tools → SDK Manager → SDK Tools**.
 
@@ -26,7 +26,7 @@ Or install it with `sdkmanager`:
 sudo apt update && sudo apt install -y sdkmanager
 mkdir -p "$HOME/Android/Sdk"
 export ANDROID_HOME="$HOME/Android/Sdk"
-sdkmanager --install "ndk;29.0.14206865"
+sdkmanager --install "ndk;30.0.16248370"
 ```
 
 ## Build the app with Android Studio
