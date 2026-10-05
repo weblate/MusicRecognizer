@@ -1,4 +1,4 @@
-* Add automatic backup feature
+* Add automatic backup feature (backup files are unencrypted, keep them in a private location)
 * Auto-delete queued recordings when a match is found (optional, enabled by default)
 * Allow starting recognition from the lock screen
 * Remember the floating button position across app restarts
