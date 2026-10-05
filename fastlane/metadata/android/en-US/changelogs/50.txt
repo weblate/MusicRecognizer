@@ -1,0 +1,5 @@
+* Add automatic backup feature
+* Auto-delete queued recordings when a match is found (optional, enabled by default)
+* Allow starting recognition from the lock screen
+* Remember the floating button position across app restarts
+* Copy track artwork to the clipboard with a long press

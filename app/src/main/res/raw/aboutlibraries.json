@@ -56,10 +56,10 @@
         },
         {
             "uniqueId": "androidx.annotation:annotation",
-            "artifactVersion": "1.10.0",
+            "artifactVersion": "1.11.0",
             "name": "Annotation",
             "description": "Provides source annotations for tooling and readability.",
-            "website": "https://developer.android.com/jetpack/androidx/releases/annotation#1.10.0",
+            "website": "https://developer.android.com/jetpack/androidx/releases/annotation#1.11.0",
             "developers": [
                 {
                     "name": "The Android Open Source Project"
@@ -2052,7 +2052,7 @@
         },
         {
             "uniqueId": "ch.acra:acra-core",
-            "artifactVersion": "5.13.1",
+            "artifactVersion": "5.14.2",
             "name": "ACRA",
             "description": "Publishes reports of Android application crashes to an end point.",
             "website": "https://acra.ch",
@@ -2073,7 +2073,7 @@
         },
         {
             "uniqueId": "ch.acra:acra-dialog",
-            "artifactVersion": "5.13.1",
+            "artifactVersion": "5.14.2",
             "name": "ACRA",
             "description": "Publishes reports of Android application crashes to an end point.",
             "website": "https://acra.ch",
@@ -2094,7 +2094,7 @@
         },
         {
             "uniqueId": "ch.acra:acra-mail",
-            "artifactVersion": "5.13.1",
+            "artifactVersion": "5.14.2",
             "name": "ACRA",
             "description": "Publishes reports of Android application crashes to an end point.",
             "website": "https://acra.ch",
@@ -2189,45 +2189,11 @@
             ]
         },
         {
-            "uniqueId": "com.google.auto.service:auto-service",
-            "artifactVersion": "1.1.1",
-            "name": "AutoService Processor",
-            "description": "Provider-configuration files for ServiceLoader.",
-            "website": "https://github.com/google/auto/tree/main/service",
-            "developers": [
-                
-            ],
-            "organization": {
-                "name": "Google LLC",
-                "url": "http://www.google.com"
-            },
-            "licenses": [
-                "Apache-2.0"
-            ]
-        },
-        {
             "uniqueId": "com.google.auto.service:auto-service-annotations",
             "artifactVersion": "1.1.1",
             "name": "AutoService",
             "description": "Provider-configuration files for ServiceLoader.",
             "website": "https://github.com/google/auto/tree/main/service",
-            "developers": [
-                
-            ],
-            "organization": {
-                "name": "Google LLC",
-                "url": "http://www.google.com"
-            },
-            "licenses": [
-                "Apache-2.0"
-            ]
-        },
-        {
-            "uniqueId": "com.google.auto:auto-common",
-            "artifactVersion": "1.2.1",
-            "name": "Auto Common Libraries",
-            "description": "Common utilities for creating annotation processors.",
-            "website": "https://github.com/google/auto/tree/master/common",
             "developers": [
                 
             ],
@@ -3037,9 +3003,9 @@
         },
         {
             "uniqueId": "net.engawapg.lib:zoomable-android",
-            "artifactVersion": "2.14.0",
+            "artifactVersion": "2.15.0",
             "name": "Engawapg Zoomable",
-            "description": "An android library for Jetpack Compose that enables contents zoomable.",
+            "description": "A Compose Multiplatform library that enables contents zoomable.",
             "website": "https://github.com/usuiat/Zoomable",
             "developers": [
                 {
@@ -3186,7 +3152,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.animation:animation",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Animation",
             "description": "Compose animation library",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3202,7 +3168,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.animation:animation-core",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Animation Core",
             "description": "Animation engine and animation primitives that are the building blocks of the Compose animation library",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3218,7 +3184,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.foundation:foundation",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Foundation",
             "description": "Higher level abstractions of the Compose UI primitives. This library is design system agnostic, providing the high-level building blocks for both application and design-system developers",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3234,7 +3200,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.foundation:foundation-layout",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Layouts",
             "description": "Compose layout implementations",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3282,7 +3248,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.runtime:runtime",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Runtime",
             "description": "Tree composition support for code generated by the Compose compiler plugin and corresponding public API",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3298,7 +3264,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.runtime:runtime-saveable",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Saveable",
             "description": "Compose components that allow saving and restoring the local ui state",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3314,7 +3280,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.ui:ui",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose UI",
             "description": "Compose UI primitives. This library contains the primitives that form the Compose UI Toolkit, such as drawing, measurement and layout.",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3330,7 +3296,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.ui:ui-geometry",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Geometry",
             "description": "Compose classes related to dimensions without units",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3346,7 +3312,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.ui:ui-graphics",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Graphics",
             "description": "Compose graphics",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3362,7 +3328,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.ui:ui-text",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose UI Text",
             "description": "Compose Text primitives and utilities",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3378,7 +3344,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.ui:ui-tooling-preview",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose UI Preview Tooling",
             "description": "Compose tooling library API. This library provides the API required to declare @Preview composables in user apps.",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3394,7 +3360,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.ui:ui-unit",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Unit",
             "description": "Compose classes for simple units",
             "website": "https://github.com/JetBrains/compose-multiplatform",
@@ -3410,7 +3376,7 @@
         },
         {
             "uniqueId": "org.jetbrains.compose.ui:ui-util",
-            "artifactVersion": "1.12.0",
+            "artifactVersion": "1.12.1",
             "name": "Compose Util",
             "description": "Internal Compose utilities used by other modules",
             "website": "https://github.com/JetBrains/compose-multiplatform",
