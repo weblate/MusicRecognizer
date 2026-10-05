@@ -6,6 +6,7 @@ import com.mrsep.musicrecognizer.core.domain.recognition.model.NetworkError
 import com.mrsep.musicrecognizer.core.domain.recognition.model.NetworkResult
 import com.mrsep.musicrecognizer.core.domain.track.model.MusicService
 import com.mrsep.musicrecognizer.core.domain.track.model.Track
+import com.mrsep.musicrecognizer.core.metadata.MusicServiceUtils
 import com.mrsep.musicrecognizer.core.metadata.tracklink.RemoteTrackLinks
 import com.mrsep.musicrecognizer.core.metadata.tracklink.TrackLinksFetcher
 import com.mrsep.musicrecognizer.core.metadata.tracklink.TrackLinksSource
@@ -56,15 +57,15 @@ class OdesliTrackLinksFetcher @Inject constructor(
     )
 
     override suspend fun fetch(track: Track): NetworkResult<RemoteTrackLinks> {
-        val queryUrl = getPriorityLinkForQuery(track.trackLinks)
-        queryUrl ?: return NetworkResult.Success(RemoteTrackLinks())
+        val (service, queryUrl) = getPriorityLinkForQuery(track.trackLinks)
+            ?: return NetworkResult.Success(RemoteTrackLinks())
         val hasAllLinks = supportedServices.all(track.trackLinks::contains)
         if (hasAllLinks) return NetworkResult.Success(RemoteTrackLinks())
 
         return if (API_KEY.isNotBlank()) {
             fetchFromApi(track, queryUrl)
         } else {
-            fetchFromHtml(track, queryUrl)
+            fetchFromHtml(track, service, queryUrl)
         }
     }
 
@@ -111,16 +112,19 @@ class OdesliTrackLinksFetcher @Inject constructor(
         }
     }
 
-    private suspend fun fetchFromHtml(track: Track, queryUrl: String): NetworkResult<RemoteTrackLinks> {
+    private suspend fun fetchFromHtml(
+        track: Track,
+        service: MusicService,
+        queryUrl: String,
+    ): NetworkResult<RemoteTrackLinks> {
         return withContext(ioDispatcher) {
             val httpClient = httpClientLazy.get()
             val response = try {
                 // Link count and IDs depend on country from requester's IP
-                httpClient.get("https://song.link/${queryUrl.encodeURLPathPart()}") {
+                httpClient.get(odesliPageUrl(service, queryUrl)) {
                     header(HttpHeaders.UserAgent, USER_AGENT_WEB)
                     header(HttpHeaders.Accept, ACCEPT_HTML)
                     header(HttpHeaders.AcceptLanguage, ACCEPT_LANGUAGE)
-                    header(HttpHeaders.Referrer, REFERER_GOOGLE)
                 }
             } catch (e: IOException) {
                 return@withContext NetworkError.BadConnection(e.message)
@@ -155,6 +159,34 @@ class OdesliTrackLinksFetcher @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun odesliPageUrl(service: MusicService, sourceUrl: String): String {
+        val id = MusicServiceUtils.parseTrackId(sourceUrl, service)
+        val prefix = odesliShortUrlPrefix(service)
+        return if (id != null && prefix != null) {
+            "https://song.link/$prefix/$id"
+        } else {
+            "https://song.link/${sourceUrl.encodeURLPathPart()}"
+        }
+    }
+
+    private fun odesliShortUrlPrefix(service: MusicService): String? = when (service) {
+        MusicService.AmazonMusic -> "a"
+        MusicService.Anghami -> "an"
+        MusicService.AppleMusic -> "i"
+        MusicService.Audiomack -> "am"
+        MusicService.Audius -> "au"
+        MusicService.Boomplay -> "bp"
+        MusicService.Deezer -> "d"
+        MusicService.Napster -> "n"
+        MusicService.Pandora -> "p"
+        MusicService.Soundcloud -> "sc"
+        MusicService.Spotify -> "s"
+        MusicService.Tidal -> "t"
+        MusicService.YandexMusic -> "ya"
+        MusicService.Youtube, MusicService.YoutubeMusic -> "y"
+        MusicService.MusicBrainz, MusicService.Qobuz -> null
     }
 
     // ========== JSON Parsing ==========
@@ -274,31 +306,31 @@ class OdesliTrackLinksFetcher @Inject constructor(
             ?.takeIf { it.isNotBlank() }
     }
 
-    private fun getPriorityLinkForQuery(links: Map<MusicService, String>): String? {
-        return links[MusicService.Spotify]
-            ?: links[MusicService.AppleMusic]
-            ?: links[MusicService.AmazonMusic]
-            ?: links[MusicService.YoutubeMusic]
-            ?: links[MusicService.Youtube]
-            ?: links[MusicService.Deezer]
-            ?: links[MusicService.Soundcloud]
-            ?: links[MusicService.YandexMusic]
-            ?: links[MusicService.Napster]
-            ?: links[MusicService.Tidal]
-            ?: links[MusicService.Pandora]
-            ?: links[MusicService.MusicBrainz]
-            ?: links[MusicService.Audiomack]
-            ?: links[MusicService.Audius]
-            ?: links[MusicService.Boomplay]
-            ?: links[MusicService.Anghami]
+    private fun getPriorityLinkForQuery(links: Map<MusicService, String>): Pair<MusicService, String>? {
+        fun pick(service: MusicService) = links[service]?.let { service to it }
+        return pick(MusicService.AppleMusic)
+            ?: pick(MusicService.Deezer)
+            ?: pick(MusicService.Spotify)
+            ?: pick(MusicService.AmazonMusic)
+            ?: pick(MusicService.YoutubeMusic)
+            ?: pick(MusicService.Youtube)
+            ?: pick(MusicService.Soundcloud)
+            ?: pick(MusicService.YandexMusic)
+            ?: pick(MusicService.Tidal)
+            ?: pick(MusicService.Pandora)
+            ?: pick(MusicService.MusicBrainz)
+            ?: pick(MusicService.Audiomack)
+            ?: pick(MusicService.Audius)
+            ?: pick(MusicService.Boomplay)
+            ?: pick(MusicService.Anghami)
+            ?: pick(MusicService.Napster)
     }
 
     companion object {
         private const val API_KEY = ""
 
-        private const val USER_AGENT_WEB = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0"
+        private const val USER_AGENT_WEB = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36"
         private const val ACCEPT_HTML = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
         private const val ACCEPT_LANGUAGE = "en-US,en;q=0.5"
-        private const val REFERER_GOOGLE = "https://www.google.com/"
     }
 }

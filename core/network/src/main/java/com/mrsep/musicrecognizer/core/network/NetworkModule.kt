@@ -20,6 +20,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.ContentTypeMergeStrategy
 import io.ktor.client.plugins.logging.ANDROID
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -63,6 +64,7 @@ internal object NetworkModule {
             json(json)
             // ACRCloud returns json as text/plain
             register(ContentType.Text.Plain, KotlinxSerializationConverter(json))
+            acceptHeaderMergeStrategy = ContentTypeMergeStrategy.SkipIfPresent
         }
         install(HttpTimeout) {
             requestTimeoutMillis = 20_000
