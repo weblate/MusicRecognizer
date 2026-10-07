@@ -341,4 +341,8 @@
     <string name="result_message_no_sound_detected_microphone">音楽が十分に大きな音量で流れていることの確認の上、もう一度試してください</string>
     <string name="result_message_no_sound_detected_device">デバイスから音楽が再生されていることの確認の上、もう一度試してください</string>
     <string name="internal_audio_capture_may_be_blocked">一部のアプリでは、アプリ内部の音声の録音に制限がかけられている場合があります。音楽を大音量で再生し、音源をマイクに切り替えてみてください。</string>
+    <string name="pref_title_auto_delete_sample_on_match">認識できてから、自動的に録音データを削除する</string>
+    <string name="backup_unencrypted_message">バックアップファイルが暗号化されていません。安全な場所に格納してください。</string>
+    <string name="pref_group_auto_backup">自動バックアップ</string>
+    <string name="pref_title_auto_backup">自動バックアップ</string>
 </resources>
