@@ -365,4 +365,9 @@
     <string name="pref_title_backup_retention">バックアップの保存期間</string>
     <string name="backup_retention_dialog_title">バックアップの保存期間</string>
     <string name="auto_backup_status_last_success">最新のバックアップ：%s</string>
+    <string name="auto_backup_status_last_failure">失敗した最新の試行︰%s</string>
+    <string name="auto_backup_status_scheduled">バックアップが予定してあります</string>
+    <string name="auto_backup_error_access_denied">バックアップフォルダへの書き込み権限がありません、フォルダを再度選択してください</string>
+    <string name="auto_backup_error_file_not_found">選択したフォルダでバックアップファイルを作成できませんでした</string>
+    <string name="auto_backup_error_unhandled">予期せぬエラーが発生しました。空き容量を確認し、フォルダへのアクセスを確認してください</string>
 </resources>
