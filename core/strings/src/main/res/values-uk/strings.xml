@@ -113,7 +113,6 @@
     <string name="recognition_status_running">Запуск</string>
     <string name="recognition_status_track_found">Знайдено трек</string>
     <string name="recognition_action_enqueue">Розпізнавання черги</string>
-    <string name="recognition_action_force_launch">Примусовий запуск</string>
     <string name="recognition_action_show_track">Показати трек</string>
     <string name="recognition_action_rename">Перейменувати</string>
     <string name="select_all">Вибрати все</string>

@@ -111,7 +111,6 @@
     <string name="recognition_status_running">En cours</string>
     <string name="recognition_status_track_found">Titre trouvé</string>
     <string name="recognition_action_enqueue">Ajouter à la file de reconnaissance</string>
-    <string name="recognition_action_force_launch">Forcer le lancement</string>
     <string name="recognition_action_show_track">Afficher la piste</string>
     <string name="recognition_action_rename">Renommer</string>
     <string name="disable_multi_selection_mode">Désactiver le mode de sélection multiple</string>

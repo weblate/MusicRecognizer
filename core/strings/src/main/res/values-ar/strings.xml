@@ -113,7 +113,6 @@
     <string name="recognition_status_running">قيد التشغيل</string>
     <string name="recognition_status_track_found">تم العثور على الأغنية</string>
     <string name="recognition_action_enqueue">إدراج عملية التعرف في قائمة الانتظار</string>
-    <string name="recognition_action_force_launch">فرض التشغيل</string>
     <string name="recognition_action_show_track">إظهار الأغنية</string>
     <string name="recognition_action_rename">إعادة تسمية</string>
     <string name="select_all">تحديد الكل</string>

@@ -21,7 +21,6 @@
     <string name="queue">Fila</string>
     <string name="recognition_status_track_found">Faixa encontrada</string>
     <string name="recognition_action_enqueue">Adicionar reconhecimento à fila</string>
-    <string name="recognition_action_force_launch">Forçar início</string>
     <string name="year">Ano</string>
     <string name="recognition_provider_dialog_title">Provedor</string>
     <string name="pref_title_show_creation_date">Mostrar data de criação</string>

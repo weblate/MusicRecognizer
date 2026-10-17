@@ -2,87 +2,111 @@ package com.mrsep.musicrecognizer.feature.recognition.scheduler
 
 import android.content.Context
 import androidx.work.ExistingWorkPolicy
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.mrsep.musicrecognizer.core.common.di.ApplicationScope
+import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionRepository
 import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionScheduler
-import com.mrsep.musicrecognizer.core.domain.recognition.model.ScheduledJobStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.time.Instant
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 internal class EnqueuedRecognitionSchedulerImpl @Inject constructor(
-    @ApplicationContext private val appContext: Context
+    @ApplicationContext private val appContext: Context,
+    private val repository: EnqueuedRecognitionRepository,
+    private val runRegistry: EnqueuedRecognitionRunRegistry,
+    @ApplicationScope private val appScope: CoroutineScope,
 ) : EnqueuedRecognitionScheduler {
 
     private val workManager get() = WorkManager.getInstance(appContext)
 
-    // Use uniqueWorkName as an extra tag to associate workInfo with recognitionId
-    // in the getStatusFlowAll method.
-    // WorkInfo only contains the worker UUID (which cannot be converted in both directions) and tags.
-    override fun enqueue(recognitionIds: List<Int>, forceLaunch: Boolean) {
-        recognitionIds.forEach { id ->
-            val uniqueWorkName = getUniqueWorkerName(id)
-            workManager.enqueueUniqueWork(
-                uniqueWorkName,
-                ExistingWorkPolicy.REPLACE,
-                EnqueuedRecognitionWorker.buildOneTimeWorkRequest(
-                    recognitionId = id,
-                    identifyTag = uniqueWorkName,
-                    forceLaunch = forceLaunch
-                )
-            )
+    private val persistentCoroutineContext = appScope.coroutineContext
+
+    private val wakeupMutex = Mutex()
+
+    override suspend fun enqueue(recognitionIds: List<Int>) {
+        if (recognitionIds.isEmpty()) return
+        withContext(persistentCoroutineContext) {
+            repository.markQueued(recognitionIds, Instant.now())
+            scheduleIfNeeded()
         }
     }
 
-    override fun cancel(recognitionIds: List<Int>) {
-        recognitionIds.forEach { id ->
-            workManager.cancelUniqueWork(getUniqueWorkerName(id))
+    override suspend fun cancel(recognitionIds: List<Int>) {
+        if (recognitionIds.isEmpty()) return
+        withContext(persistentCoroutineContext) {
+            repository.cancelWork(recognitionIds)
+            runRegistry.cancelIfProcessing(recognitionIds)
+            // Dropped rows may have been the earliest backoff, update a stale timer
+            scheduleIfNeeded()
         }
     }
 
-    override fun cancelAll() {
-        workManager.cancelAllWorkByTag(EnqueuedRecognitionWorker.TAG)
-    }
-
-    override fun getJobStatusFlow(recognitionId: Int): Flow<ScheduledJobStatus> {
-        return workManager.getWorkInfosForUniqueWorkFlow(getUniqueWorkerName(recognitionId))
-            .map { listWorkInfo -> listWorkInfo.lastOrNull().asScheduledJobStatus() }
-            .conflate()
-    }
-
-    override fun getJobStatusForAllFlow(): Flow<Map<Int, ScheduledJobStatus>> {
-        return workManager.getWorkInfosByTagFlow(EnqueuedRecognitionWorker.TAG)
-            .map { listWorkInfo ->
-                listWorkInfo.mapNotNull { workInfo ->
-                    val recognitionId = workInfo.tags.find { tag -> tag.startsWith(UNIQUE_NAME_MASK) }
-                        ?.substring(UNIQUE_NAME_MASK.length)?.toIntOrNull()
-                    recognitionId?.let { recognitionId to workInfo.asScheduledJobStatus() }
-                }.toMap()
-            }
-            .conflate()
-    }
-
-    private fun getUniqueWorkerName(recognitionId: Int) = UNIQUE_NAME_MASK.plus(recognitionId)
-
-    companion object {
-        private const val UNIQUE_NAME_MASK = "ER_ID#"
-    }
-}
-
-private fun WorkInfo?.asScheduledJobStatus(): ScheduledJobStatus {
-    return this?.let { workInfo ->
-        when (workInfo.state) {
-            WorkInfo.State.ENQUEUED -> ScheduledJobStatus.ENQUEUED
-            WorkInfo.State.RUNNING -> ScheduledJobStatus.RUNNING
-            WorkInfo.State.CANCELLED,
-            WorkInfo.State.SUCCEEDED,
-            WorkInfo.State.FAILED -> ScheduledJobStatus.INACTIVE
-
-            WorkInfo.State.BLOCKED -> {
-                error("EnqueuedRecognitionWorker implemented without a chain of workers")
+    override suspend fun cancelAll() {
+        withContext(persistentCoroutineContext) {
+            repository.cancelAllWork()
+            runRegistry.cancelAllProcessing()
+            wakeupMutex.withLock {
+                workManager.cancelUniqueWork(RecognitionQueueWorker.UNIQUE_NAME)
+                workManager.cancelUniqueWork(RecognitionTimerWorker.UNIQUE_NAME)
             }
         }
-    } ?: ScheduledJobStatus.INACTIVE
+    }
+
+    override suspend fun scheduleIfNeededOnAppStart() {
+        repository.resetStaleRunningOnAppStart()
+        scheduleIfNeeded()
+    }
+
+    /**
+     * Schedules the queue worker with no delay, or the backoff timer.
+     * Backoff is a separate unique work.
+     */
+    suspend fun scheduleIfNeeded() {
+        applyWakeup(fromTimer = false)
+    }
+
+    suspend fun onTimerFired() {
+        applyWakeup(fromTimer = true)
+    }
+
+    private suspend fun applyWakeup(fromTimer: Boolean) {
+        wakeupMutex.withLock {
+            val nextAttemptAt = repository.queuedNextAttempt()
+            val delayMs = nextAttemptAt?.let { it.toEpochMilli() - Instant.now().toEpochMilli() }
+            when {
+                delayMs == null -> if (!fromTimer) cancelTimer()
+                delayMs > 0L -> scheduleTimer(delayMs)
+                else -> {
+                    scheduleQueueWorker()
+                    if (!fromTimer) cancelTimer()
+                }
+            }
+        }
+    }
+
+    private fun scheduleQueueWorker() {
+        workManager.enqueueUniqueWork(
+            RecognitionQueueWorker.UNIQUE_NAME,
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
+            RecognitionQueueWorker.buildRequest(),
+        )
+    }
+
+    private fun scheduleTimer(delayMs: Long) {
+        workManager.enqueueUniqueWork(
+            RecognitionTimerWorker.UNIQUE_NAME,
+            ExistingWorkPolicy.REPLACE,
+            RecognitionTimerWorker.buildRequest(delayMs),
+        )
+    }
+
+    private fun cancelTimer() {
+        workManager.cancelUniqueWork(RecognitionTimerWorker.UNIQUE_NAME)
+    }
 }

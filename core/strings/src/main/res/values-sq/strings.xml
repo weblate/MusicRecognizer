@@ -119,7 +119,6 @@
     <string name="recognition_status_running">Vrapimi</string>
     <string name="recognition_status_track_found">Gjurma e gjetur</string>
     <string name="recognition_action_enqueue">Njohja në radhë</string>
-    <string name="recognition_action_force_launch">Nisja me forcë</string>
     <string name="recognition_action_show_track">Shfaq gjurmët</string>
     <string name="recognition_action_rename">Riemërto</string>
     <string name="select_all">Zgjidh të gjitha</string>

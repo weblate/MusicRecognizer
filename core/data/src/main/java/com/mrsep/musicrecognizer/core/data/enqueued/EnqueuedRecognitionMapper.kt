@@ -1,19 +1,24 @@
 package com.mrsep.musicrecognizer.core.data.enqueued
 
 import com.mrsep.musicrecognizer.core.data.track.toDomain
-import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitionEntity
 import com.mrsep.musicrecognizer.core.database.enqueued.model.EnqueuedRecognitionEntityWithTrack
 import com.mrsep.musicrecognizer.core.database.enqueued.model.RemoteRecognitionResultType
 import com.mrsep.musicrecognizer.core.domain.recognition.model.EnqueuedRecognition
 import com.mrsep.musicrecognizer.core.domain.recognition.model.RemoteRecognitionResult
 import java.io.File
 
-internal fun EnqueuedRecognition.toEntity(): EnqueuedRecognitionEntity {
+internal data class EnqueuedResultColumns(
+    val resultType: RemoteRecognitionResultType?,
+    val resultTrackId: String?,
+    val resultMessage: String?,
+)
+
+internal fun RemoteRecognitionResult?.toResultColumns(): EnqueuedResultColumns {
     var resultType: RemoteRecognitionResultType? = null
     var resultMessage: String? = null
     var trackId: String? = null
 
-    when (val result = result) {
+    when (val result = this) {
         RemoteRecognitionResult.Error.BadConnection -> {
             resultType = RemoteRecognitionResultType.BadConnection
         }
@@ -56,17 +61,7 @@ internal fun EnqueuedRecognition.toEntity(): EnqueuedRecognitionEntity {
 
         null -> { /* NO-OP */ }
     }
-
-    return EnqueuedRecognitionEntity(
-        id = id,
-        title = title,
-        sampleFileName = sampleFile.name,
-        creationDate = creationDate,
-        resultType = resultType,
-        resultTrackId = trackId,
-        resultMessage = resultMessage,
-        resultDate = resultDate
-    )
+    return EnqueuedResultColumns(resultType, trackId, resultMessage)
 }
 
 internal fun EnqueuedRecognitionEntityWithTrack.toDomain(sampleFile: File): EnqueuedRecognition {
@@ -104,6 +99,7 @@ internal fun EnqueuedRecognitionEntityWithTrack.toDomain(sampleFile: File): Enqu
         sampleFile = sampleFile,
         creationDate = enqueued.creationDate,
         result = result,
-        resultDate = enqueued.resultDate
+        resultDate = enqueued.resultDate,
+        workStatus = enqueued.workStatus,
     )
 }

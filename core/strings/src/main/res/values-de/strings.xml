@@ -98,7 +98,6 @@
     <string name="recognition_status_running">Läuft</string>
     <string name="recognition_status_track_found">Track gefunden</string>
     <string name="recognition_action_enqueue">Erkennung einreihen</string>
-    <string name="recognition_action_force_launch">Starten erzwingen</string>
     <string name="recognition_action_show_track">Track anzeigen</string>
     <string name="disable_multi_selection_mode">Mehrfachauswahl deaktivieren</string>
     <string name="cancel_selected">Ausgewählte abbrechen</string>

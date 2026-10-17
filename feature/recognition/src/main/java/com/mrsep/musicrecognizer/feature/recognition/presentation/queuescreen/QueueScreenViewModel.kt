@@ -10,9 +10,7 @@ import com.mrsep.musicrecognizer.core.common.util.AppDateTimeFormatter
 import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
 import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionRepository
 import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionScheduler
-import com.mrsep.musicrecognizer.core.domain.recognition.model.EnqueuedRecognitionWithStatus
-import com.mrsep.musicrecognizer.core.domain.recognition.model.ScheduledJobStatus
-import com.mrsep.musicrecognizer.core.domain.usecase.DeleteEnqueuedRecognition
+import com.mrsep.musicrecognizer.feature.recognition.domain.DeleteEnqueuedRecognition
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.EnqueuedRecognitionUi
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.PlayerStatusUi
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.toUi
@@ -36,21 +34,11 @@ internal class QueueScreenViewModel @Inject constructor(
 ) : ViewModel() {
 
     val screenUiStateFlow = combine(
-        flow = combine(
-            enqueuedRecognitionRepository.getAllRecognitionsFlow(),
-            recognitionScheduler.getJobStatusForAllFlow()
-        ) { enqueuedList, statusMap ->
-            enqueuedList.map { enqueued ->
-                EnqueuedRecognitionWithStatus(
-                    enqueued = enqueued,
-                    status = statusMap[enqueued.id] ?: ScheduledJobStatus.INACTIVE
-                )
-            }
-        },
+        flow = enqueuedRecognitionRepository.getAllRecognitionsFlow(),
         flow2 = preferencesRepository.userPreferencesFlow
-    ) { enqueuedWithStatusList, preferences ->
+    ) { enqueuedList, preferences ->
         QueueScreenUiState.Success(
-            recognitionList = enqueuedWithStatusList
+            recognitionList = enqueuedList
                 .map { it.toUi(dateFormatter) }
                 .toImmutableList(),
             useGridLayout = preferences.useGridForRecognitionQueue,
@@ -74,8 +62,10 @@ internal class QueueScreenViewModel @Inject constructor(
         }
     }
 
-    fun enqueueRecognition(recognitionId: Int, forceLaunch: Boolean) {
-        recognitionScheduler.enqueue(listOf(recognitionId), forceLaunch = forceLaunch)
+    fun enqueueRecognition(recognitionId: Int) {
+        viewModelScope.launch {
+            recognitionScheduler.enqueue(listOf(recognitionId))
+        }
     }
 
     fun cancelRecognition(recognitionId: Int) {
@@ -83,7 +73,9 @@ internal class QueueScreenViewModel @Inject constructor(
     }
 
     fun cancelRecognitions(recognitionIds: Set<Int>) {
-        recognitionScheduler.cancel(recognitionIds.toList())
+        viewModelScope.launch {
+            recognitionScheduler.cancel(recognitionIds.toList())
+        }
     }
 
     fun cancelAndDeleteRecognition(recognitionId: Int) {

@@ -32,7 +32,7 @@ internal fun RecognitionLazyColumn(
     multiSelectionState: MultiSelectionState<Int>,
     recognitionList: ImmutableList<EnqueuedRecognitionUi>,
     onNavigateToTrackScreen: (trackId: String) -> Unit,
-    onEnqueueRecognition: (recognitionId: Int, forceLaunch: Boolean) -> Unit,
+    onEnqueueRecognition: (recognitionId: Int) -> Unit,
     onCancelRecognition: (recognitionId: Int) -> Unit,
     onDeleteEnqueued: (recognitionId: Int) -> Unit,
     onRenameEnqueued: (recognitionId: Int, newTitle: String) -> Unit,
@@ -94,9 +94,7 @@ internal fun RecognitionLazyColumn(
                         hideActionsSheet { onDeleteEnqueued(recognition.id) }
                     },
                     onRenameEnqueued = { showRenameDialog = true },
-                    onEnqueueRecognition = { forceLaunch ->
-                        onEnqueueRecognition(recognition.id, forceLaunch)
-                    },
+                    onEnqueueRecognition = { onEnqueueRecognition(recognition.id) },
                     onCancelRecognition = { onCancelRecognition(recognition.id) },
                     onNavigateToTrackScreen = { trackId ->
                         hideActionsSheet { onNavigateToTrackScreen(trackId) }

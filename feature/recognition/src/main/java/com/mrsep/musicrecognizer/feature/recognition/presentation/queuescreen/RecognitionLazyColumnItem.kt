@@ -40,7 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mrsep.musicrecognizer.core.domain.recognition.model.ScheduledJobStatus
+import com.mrsep.musicrecognizer.core.domain.recognition.model.RecognitionWorkStatus
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.EnqueuedRecognitionUi
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.RemoteRecognitionResultUi
 import com.mrsep.musicrecognizer.core.strings.R as StringsR
@@ -180,23 +180,17 @@ internal fun EnqueuedRecognitionUi.getTitleMessage(): String {
 @Composable
 internal fun EnqueuedRecognitionUi.getStatusMessage(concise: Boolean): String {
     val statusDescription = when (status) {
-        ScheduledJobStatus.INACTIVE -> {
-            when (result) {
-                RemoteRecognitionResultUi.Error.BadConnection -> stringResource(StringsR.string.result_title_bad_connection)
-                is RemoteRecognitionResultUi.Error.BadRecording -> stringResource(StringsR.string.result_title_recording_error)
-                is RemoteRecognitionResultUi.Error.HttpError -> stringResource(StringsR.string.result_title_bad_network_response)
-                is RemoteRecognitionResultUi.Error.UnhandledError -> stringResource(StringsR.string.result_title_internal_error)
-                is RemoteRecognitionResultUi.Error.AuthError -> stringResource(StringsR.string.result_title_auth_error)
-                is RemoteRecognitionResultUi.Error.ApiUsageLimited -> stringResource(StringsR.string.result_title_service_usage_limited)
-                RemoteRecognitionResultUi.NoMatches -> stringResource(StringsR.string.result_title_no_matches)
-                RemoteRecognitionResultUi.NoSoundDetected -> stringResource(StringsR.string.result_title_no_sound_detected)
-                is RemoteRecognitionResultUi.Success -> stringResource(StringsR.string.recognition_status_track_found)
-                null -> stringResource(StringsR.string.recognition_status_idle)
-            }
+        RecognitionWorkStatus.IDLE -> when (val current = result) {
+            null -> stringResource(StringsR.string.recognition_status_idle)
+            else -> current.statusTitle()
         }
 
-        ScheduledJobStatus.ENQUEUED -> stringResource(StringsR.string.recognition_status_enqueued)
-        ScheduledJobStatus.RUNNING -> stringResource(StringsR.string.recognition_status_running)
+        RecognitionWorkStatus.QUEUED -> when (result) {
+            is RemoteRecognitionResultUi.Error -> stringResource(StringsR.string.recognition_status_retry)
+            else -> stringResource(StringsR.string.recognition_status_enqueued)
+        }
+
+        RecognitionWorkStatus.RUNNING -> stringResource(StringsR.string.recognition_status_running)
     }
     return if (concise) {
         statusDescription
@@ -206,4 +200,17 @@ internal fun EnqueuedRecognitionUi.getStatusMessage(concise: Boolean): String {
             statusDescription
         )
     }
+}
+
+@Composable
+private fun RemoteRecognitionResultUi.statusTitle() = when (this) {
+    RemoteRecognitionResultUi.Error.BadConnection -> stringResource(StringsR.string.result_title_bad_connection)
+    is RemoteRecognitionResultUi.Error.BadRecording -> stringResource(StringsR.string.result_title_recording_error)
+    is RemoteRecognitionResultUi.Error.HttpError -> stringResource(StringsR.string.result_title_bad_network_response)
+    is RemoteRecognitionResultUi.Error.UnhandledError -> stringResource(StringsR.string.result_title_internal_error)
+    is RemoteRecognitionResultUi.Error.AuthError -> stringResource(StringsR.string.result_title_auth_error)
+    is RemoteRecognitionResultUi.Error.ApiUsageLimited -> stringResource(StringsR.string.result_title_service_usage_limited)
+    RemoteRecognitionResultUi.NoMatches -> stringResource(StringsR.string.result_title_no_matches)
+    RemoteRecognitionResultUi.NoSoundDetected -> stringResource(StringsR.string.result_title_no_sound_detected)
+    is RemoteRecognitionResultUi.Success -> stringResource(StringsR.string.recognition_status_track_found)
 }

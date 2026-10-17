@@ -148,7 +148,6 @@
     <string name="recognition_status_track_found">Lugu leidus</string>
     <string name="recognition_status_running">Töös</string>
     <string name="recognition_action_enqueue">Lisa tuvastamine ootejärjekorda</string>
-    <string name="recognition_action_force_launch">Käivita sundkorras</string>
     <string name="track_info">Loo teave</string>
     <string name="track_info_title_duration">Loo kestus:</string>
     <string name="track_info_title_recognized_at">Tuvastamise aeg:</string>

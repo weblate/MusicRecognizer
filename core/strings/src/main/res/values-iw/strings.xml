@@ -205,7 +205,6 @@
     <string name="recognition_queue">מסך תור הזיהוי</string>
     <string name="format_recognition_status">מצב: %s</string>
     <string name="recognition_status_idle">ממתין</string>
-    <string name="recognition_action_force_launch">כפה הפעלה</string>
     <string name="web">אינטרנט</string>
     <string name="lyrics">מילות השיר</string>
     <string name="acr_cloud_help_dialog_step2">הגדר את מקור השמע כ\"שמע מוקלט\"</string>

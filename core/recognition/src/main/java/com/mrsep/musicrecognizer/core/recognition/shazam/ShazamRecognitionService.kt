@@ -20,6 +20,7 @@ import io.ktor.http.takeFrom
 import io.ktor.util.appendAll
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.time.Instant
@@ -107,6 +108,7 @@ internal class ShazamRecognitionService @Inject constructor(
                     response.body<ShazamResponseJson>()
                         .toRecognitionResult(sample.timestamp, sample.duration)
                 } catch (e: Exception) {
+                    ensureActive()
                     RemoteRecognitionResult.Error.UnhandledError(e.message ?: "", e)
                 }
             } else {

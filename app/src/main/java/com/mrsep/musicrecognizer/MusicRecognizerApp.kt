@@ -19,6 +19,7 @@ import coil3.SingletonImageLoader
 import com.mrsep.musicrecognizer.core.audio.audiorecord.encoder.AudioRecordingDataSource
 import com.mrsep.musicrecognizer.core.common.di.ApplicationScope
 import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
+import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionScheduler
 import com.mrsep.musicrecognizer.feature.backup.AutoBackupScheduler
 import com.mrsep.musicrecognizer.feature.backup.BackupNotificationHelper
 import com.mrsep.musicrecognizer.feature.backup.RestoreStaging
@@ -57,6 +58,8 @@ class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configur
     @Inject
     @ApplicationScope
     lateinit var appScope: CoroutineScope
+    @Inject
+    lateinit var enqueuedRecognitionScheduler: EnqueuedRecognitionScheduler
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -79,6 +82,7 @@ class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configur
         createNotificationChannels()
         createShortcuts()
         ensureAutoBackupSchedule()
+        ensureRecognitionQueueSchedule()
     }
 
     override fun newImageLoader(context: Context): ImageLoader = imageLoader.get()
@@ -86,6 +90,12 @@ class MusicRecognizerApp : Application(), SingletonImageLoader.Factory, Configur
     fun cleanup() {
         appScope.launch {
             audioRecordingDataSource.clear()
+        }
+    }
+
+    private fun ensureRecognitionQueueSchedule() {
+        appScope.launch {
+            enqueuedRecognitionScheduler.scheduleIfNeededOnAppStart()
         }
     }
 

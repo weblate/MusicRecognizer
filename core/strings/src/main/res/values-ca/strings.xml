@@ -113,7 +113,6 @@
     <string name="recognition_status_running">Corrent</string>
     <string name="recognition_status_track_found">S\'ha trobat la pista</string>
     <string name="recognition_action_enqueue">Posar en cua el reconeixement</string>
-    <string name="recognition_action_force_launch">Forçar l\'inici</string>
     <string name="recognition_action_show_track">Mostrar pista</string>
     <string name="recognition_action_rename">Reanomenar</string>
     <string name="select_all">Seleccionar tot</string>

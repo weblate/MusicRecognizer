@@ -6,6 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.mrsep.musicrecognizer.core.database.track.TrackEntity
+import com.mrsep.musicrecognizer.core.domain.recognition.model.RecognitionWorkStatus
 import java.time.Instant
 
 @Entity(
@@ -31,6 +32,15 @@ data class EnqueuedRecognitionEntity(
     @ColumnInfo(name = "creation_date")
     val creationDate: Instant,
 
+    @ColumnInfo(name = "work_status")
+    val workStatus: RecognitionWorkStatus = RecognitionWorkStatus.IDLE,
+    @ColumnInfo(name = "queued_at")
+    val queuedAt: Instant? = null,
+    @ColumnInfo(name = "attempt_count")
+    val attemptCount: Int = 0,
+    @ColumnInfo(name = "next_attempt_at")
+    val nextAttemptAt: Instant? = null,
+
     // result can't be embedded object due to constraint of foreign key indexing, see Index docs
     @ColumnInfo(name = "result_type")
     val resultType: RemoteRecognitionResultType? = null,
@@ -39,5 +49,5 @@ data class EnqueuedRecognitionEntity(
     @ColumnInfo(name = "result_message")
     val resultMessage: String? = null,
     @ColumnInfo(name = "result_date")
-    val resultDate: Instant? = null
+    val resultDate: Instant? = null,
 )

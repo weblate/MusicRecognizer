@@ -19,13 +19,11 @@ import com.mrsep.musicrecognizer.core.domain.track.model.TrackPreview
 import com.mrsep.musicrecognizer.core.metadata.lyrics.LyricsFetcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.collections.map
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class TrackRepositoryImpl @Inject constructor(
     @ApplicationScope private val appScope: CoroutineScope,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
@@ -37,9 +35,9 @@ internal class TrackRepositoryImpl @Inject constructor(
     private val trackDao = database.trackDao()
     private val persistentCoroutineContext = appScope.coroutineContext + ioDispatcher
 
-    override suspend fun upsertKeepProperties(tracks: List<Track>): List<Track> {
+    override suspend fun upsertFromRecognition(track: Track): Track {
         return withStoreWrite {
-            trackDao.upsertKeepProperties(tracks.map(Track::toEntity)).map(TrackEntity::toDomain)
+            trackDao.upsertFromRecognition(track.toEntity()).toDomain()
         }
     }
 

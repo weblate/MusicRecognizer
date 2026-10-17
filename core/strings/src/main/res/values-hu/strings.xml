@@ -113,7 +113,6 @@
     <string name="recognition_status_running">Folyamatban</string>
     <string name="recognition_status_track_found">Szám megtalálva</string>
     <string name="recognition_action_enqueue">Felismerés várólistára helyezése</string>
-    <string name="recognition_action_force_launch">Kényszerített indítás</string>
     <string name="recognition_action_show_track">Szám megjelenítése</string>
     <string name="recognition_action_rename">Átnevezés</string>
     <string name="select_all">Mind kijelölése</string>

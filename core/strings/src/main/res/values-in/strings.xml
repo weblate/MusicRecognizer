@@ -113,7 +113,6 @@
     <string name="recognition_status_running">Sedang berjalan</string>
     <string name="recognition_status_track_found">Trek ditemukan</string>
     <string name="recognition_action_enqueue">Antrekan pengenalan</string>
-    <string name="recognition_action_force_launch">Paksa jalankan</string>
     <string name="recognition_action_show_track">Tampilkan trek</string>
     <string name="recognition_action_rename">Ganti nama</string>
     <string name="select_all">Pilih semua</string>

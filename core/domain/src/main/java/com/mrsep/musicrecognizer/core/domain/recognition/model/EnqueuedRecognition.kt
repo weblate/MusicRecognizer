@@ -9,12 +9,17 @@ data class EnqueuedRecognition(
     val sampleFile: File,
     val creationDate: Instant,
     val result: RemoteRecognitionResult?,
-    val resultDate: Instant?
+    val resultDate: Instant?,
+    val workStatus: RecognitionWorkStatus,
 )
 
-enum class ScheduledJobStatus { INACTIVE, ENQUEUED, RUNNING }
+enum class RecognitionWorkStatus {
+    IDLE,
+    QUEUED,
+    RUNNING,
+}
 
-data class EnqueuedRecognitionWithStatus(
-    val enqueued: EnqueuedRecognition,
-    val status: ScheduledJobStatus
+data class ClaimedEnqueuedRecognition(
+    val id: Int,
+    val attemptCount: Int,
 )

@@ -115,7 +115,6 @@
     <string name="recognition_status_running">Çalışıyor</string>
     <string name="recognition_status_track_found">Parça bulundu</string>
     <string name="recognition_action_enqueue">Tanımayı kuyruğa al</string>
-    <string name="recognition_action_force_launch">Zorla başlat</string>
     <string name="recognition_action_show_track">Parçayı göster</string>
     <string name="recognition_action_rename">Yeniden adlandır</string>
     <string name="select_all">Tümünü seç</string>

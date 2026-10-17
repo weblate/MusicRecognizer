@@ -194,7 +194,6 @@
     <string name="result_title_service_usage_limited">Využití služby omezeno</string>
     <string name="result_message_service_usage_limited">Dosáhli jste limitu využití vaší služby. Zkontrolujte prosím svůj plán nebo to zkuste znovu</string>
     <string name="library_menu_mark_all_tracks_as_viewed">Označit vše jako zobrazené</string>
-    <string name="recognition_action_force_launch">Vynutit spuštění</string>
     <string name="format_open_website_or_app">Otevřít %s</string>
     <string name="track_metadata">Metadata</string>
     <string name="track">Stopa</string>

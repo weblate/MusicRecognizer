@@ -105,7 +105,6 @@
     <string name="recognition_status_enqueued">Zaradené do poradia</string>
     <string name="recognition_status_track_found">Stopa nájdená</string>
     <string name="recognition_action_enqueue">Rozpoznanie radu</string>
-    <string name="recognition_action_force_launch">Vynútiť spustenie</string>
     <string name="recognition_action_show_track">Zobraziť stopu</string>
     <string name="recognition_action_rename">Premenovať</string>
     <string name="select_all">Vybrať všetko</string>

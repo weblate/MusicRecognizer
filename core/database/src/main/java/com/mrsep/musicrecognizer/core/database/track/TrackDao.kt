@@ -16,17 +16,28 @@ interface TrackDao {
     @Upsert
     suspend fun upsert(tracks: List<TrackEntity>)
 
+    @Upsert
+    suspend fun upsert(track: TrackEntity)
+
     @Update
     suspend fun update(track: TrackEntity)
 
     @Transaction
-    suspend fun upsertKeepProperties(tracks: List<TrackEntity>): List<TrackEntity> {
-        val trackList = tracks.map { newTrack ->
-            val oldTrack = getTrack(newTrack.id) ?: return@map newTrack
-            newTrack.copy(properties = oldTrack.properties)
+    suspend fun upsertFromRecognition(tracks: List<TrackEntity>): List<TrackEntity> {
+        val merged = tracks.map { newTrack ->
+            val keptProps = getTrack(newTrack.id)?.properties ?: newTrack.properties
+            newTrack.copy(properties = keptProps.copy(isViewed = false))
         }
-        upsert(trackList)
-        return trackList
+        upsert(merged)
+        return merged
+    }
+
+    @Transaction
+    suspend fun upsertFromRecognition(track: TrackEntity): TrackEntity {
+        val kept = getTrack(track.id)?.properties ?: track.properties
+        val merged = track.copy(properties = kept.copy(isViewed = false))
+        upsert(merged)
+        return merged
     }
 
     @Transaction

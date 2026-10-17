@@ -84,7 +84,6 @@
     <string name="recognition_status_running">In corso</string>
     <string name="recognition_status_track_found">Traccia trovata</string>
     <string name="recognition_action_enqueue">Riconoscimento accodato</string>
-    <string name="recognition_action_force_launch">Forza avvio</string>
     <string name="recognition_action_show_track">Mostra traccia</string>
     <string name="delete_selected">Rimuovi selezionati</string>
     <string name="recording_start_player">Riproduci</string>

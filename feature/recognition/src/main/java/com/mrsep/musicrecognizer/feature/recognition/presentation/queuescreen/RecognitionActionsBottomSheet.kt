@@ -38,7 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mrsep.musicrecognizer.core.domain.recognition.model.ScheduledJobStatus
+import com.mrsep.musicrecognizer.core.domain.recognition.model.RecognitionWorkStatus
 import com.mrsep.musicrecognizer.core.ui.util.shareFile
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.EnqueuedRecognitionUi
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.RemoteRecognitionResultUi
@@ -55,7 +55,7 @@ internal fun RecognitionActionsBottomSheet(
     sheetState: SheetState,
     onDismissRequest: () -> Unit,
     recognition: EnqueuedRecognitionUi,
-    onEnqueueRecognition: (forceLaunch: Boolean) -> Unit,
+    onEnqueueRecognition: () -> Unit,
     onCancelRecognition: () -> Unit,
     onNavigateToTrackScreen: (trackId: String) -> Unit,
     onRenameEnqueued: () -> Unit,
@@ -158,7 +158,7 @@ internal fun RecognitionActionsBottomSheet(
                 contentAlignment = Alignment.CenterStart
             ) { status ->
                 when (status) {
-                    ScheduledJobStatus.INACTIVE -> {
+                    RecognitionWorkStatus.IDLE -> {
                         when (recognition.result) {
                             is RemoteRecognitionResultUi.Success -> {
                                 BottomSheetAction(
@@ -174,24 +174,17 @@ internal fun RecognitionActionsBottomSheet(
                             RemoteRecognitionResultUi.NoSoundDetected,
                             is RemoteRecognitionResultUi.Error,
                             null -> {
-                                Column {
-                                    BottomSheetAction(
-                                        title = stringResource(StringsR.string.recognition_action_enqueue),
-                                        iconResId = UiR.drawable.outline_schedule_send_24,
-                                        onClick = { onEnqueueRecognition(false) }
-                                    )
-                                    BottomSheetAction(
-                                        title = stringResource(StringsR.string.recognition_action_force_launch),
-                                        iconResId = UiR.drawable.outline_send_24,
-                                        onClick = { onEnqueueRecognition(true) }
-                                    )
-                                }
+                                BottomSheetAction(
+                                    title = stringResource(StringsR.string.recognition_action_enqueue),
+                                    iconResId = UiR.drawable.outline_schedule_send_24,
+                                    onClick = onEnqueueRecognition
+                                )
                             }
                         }
                     }
 
-                    ScheduledJobStatus.ENQUEUED,
-                    ScheduledJobStatus.RUNNING -> {
+                    RecognitionWorkStatus.QUEUED,
+                    RecognitionWorkStatus.RUNNING -> {
                         BottomSheetAction(
                             title = stringResource(StringsR.string.action_cancel_recognition),
                             iconResId = UiR.drawable.outline_cancel_schedule_send_24,

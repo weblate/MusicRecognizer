@@ -181,7 +181,6 @@
     <string name="recognition_status_running">识别中</string>
     <string name="recognition_status_track_found">已识别歌曲</string>
     <string name="recognition_action_enqueue">加入识别队列</string>
-    <string name="recognition_action_force_launch">强制启动识别</string>
     <string name="recognition_action_show_track">显示歌曲</string>
     <string name="recognition_action_rename">重命名</string>
     <string name="select_all">全选</string>

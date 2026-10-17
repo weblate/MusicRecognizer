@@ -172,7 +172,6 @@
     <string name="empty_recognition_queue_title">認識待ちの曲がありません</string>
     <string name="empty_recognition_queue_subtitle">オフライン時や認識が失敗した場合に、選択されたフォールバック処理に従って録音されたサンプルを認識待ちリストに入れることができます</string>
     <string name="recognition_action_enqueue">認識待ちリストに追加</string>
-    <string name="recognition_action_force_launch">強制的に認識する</string>
     <string name="disable_multi_selection_mode">複数選択モードを無効にする</string>
     <string name="cancel_selected">選択された認識を中止</string>
     <string name="delete_selected">選択さらた認識を削除</string>

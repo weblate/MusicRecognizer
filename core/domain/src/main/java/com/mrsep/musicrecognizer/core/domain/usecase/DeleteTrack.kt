@@ -12,6 +12,7 @@ class DeleteTrack @Inject constructor(
 ) {
 
     suspend operator fun invoke(trackIds: List<String>) {
+        if (trackIds.isEmpty()) return
         resultNotificationManager.cancelAllMatches(trackIds.toSet())
         trackIds.forEach(trackMetadataFetchManager::cancelAllForTrack)
         trackRepository.delete(trackIds)

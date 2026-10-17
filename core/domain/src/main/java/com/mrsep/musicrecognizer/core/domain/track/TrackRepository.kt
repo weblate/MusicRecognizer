@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface TrackRepository {
 
-    suspend fun upsertKeepProperties(tracks: List<Track>): List<Track>
+    suspend fun upsertFromRecognition(track: Track): Track
 
     suspend fun updateTransform(trackId: String, transform: (previous: Track) -> Track)
 

@@ -104,7 +104,6 @@
     <string name="recognition_status_running">War ober</string>
     <string name="recognition_status_track_found">Roudenn kavet</string>
     <string name="recognition_action_enqueue">Ouzhpennañ d\'ar steudad anaout</string>
-    <string name="recognition_action_force_launch">Rediañ al lec\'hiañ</string>
     <string name="recognition_action_show_track">Diskouez ar roudenn</string>
     <string name="recognition_action_rename">Adenvel</string>
     <string name="select_all">Diuzañ pep-tra</string>

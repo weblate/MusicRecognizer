@@ -19,7 +19,7 @@ import kotlin.time.Duration.Companion.milliseconds
         TrackEntity::class,
         EnqueuedRecognitionEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),

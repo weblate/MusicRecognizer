@@ -147,13 +147,7 @@ internal class RecognitionInteractorImpl @Inject constructor(
                 val recognitionResult = when (result) {
                     is RemoteRecognitionResult.Success -> {
                         stopRecordingAndDeleteSessionFiles()
-                        val trackWithStoredProps = trackRepository
-                            .upsertKeepProperties(listOf(result.track))
-                            .first()
-                        trackRepository.setViewed(trackWithStoredProps.id, false)
-                        val updatedTrack = trackWithStoredProps.copy(
-                            properties = trackWithStoredProps.properties.copy(isViewed = false)
-                        )
+                        val updatedTrack = trackRepository.upsertFromRecognition(result.track)
                         val shouldSearchForLinks = preferencesRepository.userPreferencesFlow.first()
                             .requiredMusicServices.any { it !in updatedTrack.trackLinks }
                         if (shouldSearchForLinks) {
@@ -263,7 +257,7 @@ internal class RecognitionInteractorImpl @Inject constructor(
         )
         recognitionId ?: return RecognitionTask.Error()
         if (launched) {
-            enqueuedRecognitionScheduler.enqueue(listOf(recognitionId), forceLaunch = false)
+            enqueuedRecognitionScheduler.enqueue(listOf(recognitionId))
         }
         return RecognitionTask.Created(recognitionId, launched)
     }
