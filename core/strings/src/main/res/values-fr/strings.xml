@@ -367,9 +367,9 @@
     </plurals>
     <string name="backup_frequency_dialog_title">Intervalle de sauvegarde</string>
     <plurals name="pref_subtitle_backup_retention">
-        <item quantity="one">La dernière</item>
-        <item quantity="many">Les %d dernières</item>
-        <item quantity="other">Les %d dernières</item>
+        <item quantity="one">Dernière sauvegarde %d</item>
+        <item quantity="many">%d dernières sauvegardes</item>
+        <item quantity="other">%d dernières sauvegardes</item>
     </plurals>
     <string name="pref_subtitle_backup_retention_unlimited">Tout conserver</string>
     <string name="backup_retention_dialog_title">Sauvegardes à conserver</string>
