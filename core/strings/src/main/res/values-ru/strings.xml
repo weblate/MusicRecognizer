@@ -131,6 +131,9 @@
     <string name="recognition_action_enqueue">Поставить в очередь</string>
     <string name="recognition_action_show_track">Показать трек</string>
     <string name="recognition_action_rename">Переименовать</string>
+    <string name="recognition_queue_offline_paused">Очередь на паузе, пока нет интернета</string>
+    <string name="recognition_queue_low_battery_paused">Очередь на паузе, пока батарея разряжена</string>
+    <string name="recognition_queue_low_battery_allow">Разрешить в этот раз</string>
     <string name="select_all">Выбрать все</string>
     <string name="deselect_all">Снять выделение со всех</string>
     <string name="disable_multi_selection_mode">Отключить режим множественного выбора</string>

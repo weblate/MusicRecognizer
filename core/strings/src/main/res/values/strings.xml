@@ -136,6 +136,9 @@
     <string name="recognition_action_enqueue">Enqueue recognition</string>
     <string name="recognition_action_show_track">Show track</string>
     <string name="recognition_action_rename">Rename</string>
+    <string name="recognition_queue_offline_paused">The queue is paused while there is no internet</string>
+    <string name="recognition_queue_low_battery_paused">The queue is paused while the battery is low</string>
+    <string name="recognition_queue_low_battery_allow">Allow this time</string>
     <string name="select_all">Select all</string>
     <string name="deselect_all">Deselect all</string>
     <string name="disable_multi_selection_mode">Disable multi-selection mode</string>

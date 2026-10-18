@@ -3,8 +3,13 @@ package com.mrsep.musicrecognizer.feature.recognition.presentation.queuescreen
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -14,8 +19,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mrsep.musicrecognizer.core.ui.components.LoadingStub
@@ -43,6 +53,7 @@ internal fun QueueScreen(
 
         is QueueScreenUiState.Success -> {
             val context = LocalContext.current
+            val density = LocalDensity.current
             val playerStatus by viewModel.playerStatusFlow.collectAsStateWithLifecycle()
             LaunchedEffect(playerStatus) {
                 val error = (playerStatus as? PlayerStatusUi.Error) ?: return@LaunchedEffect
@@ -87,9 +98,13 @@ internal fun QueueScreen(
                     onChangeShowCreationDate = viewModel::setShowCreationDate,
                     scrollBehavior = topBarBehaviour,
                 )
+                var pausePopupHeight by remember { mutableStateOf(0.dp) }
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .clipToBounds(),
                 ) {
                     AnimatedContent(
                         targetState = uiState.useGridLayout,
@@ -109,6 +124,7 @@ internal fun QueueScreen(
                                 playerStatus = playerStatus,
                                 onStartPlayRecord = viewModel::startAudioPlayer,
                                 onStopPlayRecord = viewModel::stopAudioPlayer,
+                                extraBottomContentPadding = pausePopupHeight,
                                 modifier = Modifier
                                     .nestedScroll(topBarBehaviour.nestedScrollConnection)
                                     .fillMaxSize()
@@ -127,6 +143,7 @@ internal fun QueueScreen(
                                 playerStatus = playerStatus,
                                 onStartPlayRecord = viewModel::startAudioPlayer,
                                 onStopPlayRecord = viewModel::stopAudioPlayer,
+                                extraBottomContentPadding = pausePopupHeight,
                                 modifier = Modifier
                                     .nestedScroll(topBarBehaviour.nestedScrollConnection)
                                     .fillMaxSize()
@@ -143,6 +160,32 @@ internal fun QueueScreen(
                                 .background(color = MaterialTheme.colorScheme.surface)
                                 .fillMaxSize()
                         )
+                    }
+
+                    val slideSpec = tween<IntOffset>(250, easing = FastOutSlowInEasing)
+                    val fadeSpec = tween<Float>(200, easing = FastOutSlowInEasing)
+                    AnimatedContent(
+                        targetState = uiState.queuePauseReason,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .onSizeChanged {
+                                pausePopupHeight = with(density) { it.height.toDp() }
+                            }
+                        ,
+                        contentAlignment = Alignment.BottomCenter,
+                        transitionSpec = {
+                            (slideInVertically(slideSpec) { it } + fadeIn(fadeSpec))
+                                .togetherWith(slideOutVertically(slideSpec) { it } + fadeOut(fadeSpec))
+                        },
+                        label = "QueuePausedPopup",
+                    ) { reason ->
+                        if (reason != QueuePauseReason.None) {
+                            QueuePausedPopup(
+                                reason = reason,
+                                onAllowLowBattery = viewModel::allowLowBatteryThisTime,
+                            )
+                        }
                     }
                 }
             }

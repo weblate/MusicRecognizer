@@ -10,4 +10,5 @@ internal fun UserPreferencesProto.sanitizedForBackup(): UserPreferencesProto = c
     }
     clearLastAutoBackupResult()
     autoBackupConsecutiveFailures = 0
+    allowQueueOnLowBattery = false
 }

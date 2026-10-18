@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mrsep.musicrecognizer.core.ui.components.MultiSelectionState
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.EnqueuedRecognitionUi
@@ -38,11 +39,12 @@ internal fun RecognitionLazyGrid(
     playerStatus: PlayerStatusUi,
     onStartPlayRecord: (recognitionId: Int) -> Unit,
     onStopPlayRecord: () -> Unit,
+    extraBottomContentPadding: Dp,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 108.dp),
         state = lazyGridState,
-        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, bottom = 10.dp),
+        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, bottom = 10.dp + extraBottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = modifier

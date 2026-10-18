@@ -9,4 +9,8 @@ interface EnqueuedRecognitionScheduler {
     suspend fun cancelAll()
 
     suspend fun scheduleIfNeededOnAppStart()
+
+    suspend fun allowLowBatteryThisTime()
+
+    suspend fun disallowQueueOnLowBattery()
 }

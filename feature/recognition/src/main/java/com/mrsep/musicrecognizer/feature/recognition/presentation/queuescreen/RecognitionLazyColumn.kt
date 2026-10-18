@@ -16,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mrsep.musicrecognizer.core.ui.components.MultiSelectionState
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.EnqueuedRecognitionUi
@@ -38,11 +39,13 @@ internal fun RecognitionLazyColumn(
     onRenameEnqueued: (recognitionId: Int, newTitle: String) -> Unit,
     playerStatus: PlayerStatusUi,
     onStartPlayRecord: (recognitionId: Int) -> Unit,
-    onStopPlayRecord: () -> Unit
+    onStopPlayRecord: () -> Unit,
+    extraBottomContentPadding: Dp,
 ) {
     LazyColumn(
         state = lazyListState,
-        modifier = modifier
+        modifier = modifier,
+        contentPadding = PaddingValues(bottom = extraBottomContentPadding),
     ) {
         itemsIndexed(
             items = recognitionList,

@@ -142,7 +142,9 @@ message UserPreferencesProto {
 
   SnappedWindowPositionProto floating_button_position = 55;
 
-  // NEXT AVAILABLE ID: 56
+  bool allow_queue_on_low_battery = 56;
+
+  // NEXT AVAILABLE ID: 57
 
 }
 

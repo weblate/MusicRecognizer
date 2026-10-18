@@ -40,4 +40,5 @@ interface PreferencesRepository {
     suspend fun setAutoBackupIntervalDays(value: Int)
     suspend fun setAutoBackupKeepCount(value: Int)
     suspend fun setAutoBackupLastResult(result: AutoBackupResult?)
+    suspend fun setAllowQueueOnLowBattery(value: Boolean)
 }

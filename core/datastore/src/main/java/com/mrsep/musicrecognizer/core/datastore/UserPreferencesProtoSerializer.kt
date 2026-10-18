@@ -102,6 +102,7 @@ internal object UserPreferencesProtoSerializer : Serializer<UserPreferencesProto
                 keepCount = 3
             }
             autoBackupConsecutiveFailures = 0
+            allowQueueOnLowBattery = false
         }
 
     override suspend fun readFrom(input: InputStream): UserPreferencesProto {

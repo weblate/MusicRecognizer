@@ -29,10 +29,13 @@ internal class RecognitionTimerWorker @AssistedInject constructor(
         const val TAG = "RecognitionTimerWorker"
         const val UNIQUE_NAME = "recognition_timer"
 
-        fun buildRequest(initialDelayMs: Long): OneTimeWorkRequest {
+        fun buildRequest(
+            initialDelayMs: Long,
+            requiresBatteryNotLow: Boolean,
+        ): OneTimeWorkRequest {
             return OneTimeWorkRequestBuilder<RecognitionTimerWorker>()
                 .addTag(TAG)
-                .setConstraints(RecognitionQueueWorker.buildConstraints())
+                .setConstraints(RecognitionQueueWorker.buildConstraints(requiresBatteryNotLow))
                 .setInitialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
                 .build()
         }

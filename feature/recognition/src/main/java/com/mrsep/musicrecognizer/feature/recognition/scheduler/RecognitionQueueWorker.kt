@@ -26,6 +26,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import java.util.UUID
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -167,17 +168,21 @@ internal class RecognitionQueueWorker @AssistedInject constructor(
             return (MIN_DELAY_BETWEEN_RUNS - idleFor).coerceAtLeast(Duration.ZERO)
         }
 
-        fun buildConstraints(): Constraints {
+        fun buildConstraints(requiresBatteryNotLow: Boolean): Constraints {
             return Constraints.Builder()
-                .setRequiresBatteryNotLow(true)
+                .setRequiresBatteryNotLow(requiresBatteryNotLow)
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
         }
 
-        fun buildRequest(): OneTimeWorkRequest {
+        fun buildRequest(
+            requiresBatteryNotLow: Boolean,
+            id: UUID? = null,
+        ): OneTimeWorkRequest {
             return OneTimeWorkRequestBuilder<RecognitionQueueWorker>()
+                .apply { if (id != null) setId(id) }
                 .addTag(TAG)
-                .setConstraints(buildConstraints())
+                .setConstraints(buildConstraints(requiresBatteryNotLow))
                 .build()
         }
     }

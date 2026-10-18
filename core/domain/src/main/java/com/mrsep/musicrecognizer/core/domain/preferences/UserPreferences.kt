@@ -34,6 +34,7 @@ data class UserPreferences(
     val autoBackup: AutoBackupPreferences,
     val autoBackupLastResult: AutoBackupResult?,
     val autoBackupConsecutiveFailures: Int,
+    val allowQueueOnLowBattery: Boolean,
 )
 
 enum class AudioCaptureMode { Microphone, Device, Auto }

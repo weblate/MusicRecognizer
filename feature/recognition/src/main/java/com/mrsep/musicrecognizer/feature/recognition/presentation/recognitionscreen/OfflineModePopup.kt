@@ -16,14 +16,14 @@ internal fun OfflineModePopup(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         shape = CircleShape,
         modifier = modifier
     ) {
         Text(
             text = stringResource(R.string.popup_offline_mode),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
         )
     }

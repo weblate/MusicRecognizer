@@ -1,5 +1,6 @@
 package com.mrsep.musicrecognizer.feature.recognition.presentation.queuescreen
 
+import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,11 +11,15 @@ import com.mrsep.musicrecognizer.core.common.util.AppDateTimeFormatter
 import com.mrsep.musicrecognizer.core.domain.preferences.PreferencesRepository
 import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionRepository
 import com.mrsep.musicrecognizer.core.domain.recognition.EnqueuedRecognitionScheduler
+import com.mrsep.musicrecognizer.core.domain.recognition.NetworkMonitor
+import com.mrsep.musicrecognizer.core.domain.recognition.model.RecognitionWorkStatus
 import com.mrsep.musicrecognizer.feature.recognition.domain.DeleteEnqueuedRecognition
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.EnqueuedRecognitionUi
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.PlayerStatusUi
 import com.mrsep.musicrecognizer.feature.recognition.presentation.model.toUi
+import com.mrsep.musicrecognizer.feature.recognition.scheduler.systemBatteryLowFlow
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,25 +29,35 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class QueueScreenViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val preferencesRepository: PreferencesRepository,
     private val enqueuedRecognitionRepository: EnqueuedRecognitionRepository,
     private val recognitionScheduler: EnqueuedRecognitionScheduler,
     private val deleteEnqueuedRecognitionUseCase: DeleteEnqueuedRecognition,
     private val playerController: PlayerController,
     private val dateFormatter: AppDateTimeFormatter,
+    networkMonitor: NetworkMonitor,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     val screenUiStateFlow = combine(
-        flow = enqueuedRecognitionRepository.getAllRecognitionsFlow(),
-        flow2 = preferencesRepository.userPreferencesFlow
-    ) { enqueuedList, preferences ->
+        enqueuedRecognitionRepository.getAllRecognitionsFlow(),
+        preferencesRepository.userPreferencesFlow,
+        appContext.systemBatteryLowFlow(),
+        networkMonitor.isOffline,
+    ) { enqueuedList, preferences, batteryLow, offline ->
         QueueScreenUiState.Success(
             recognitionList = enqueuedList
                 .map { it.toUi(dateFormatter) }
                 .toImmutableList(),
             useGridLayout = preferences.useGridForRecognitionQueue,
             showCreationDate = preferences.showCreationDateInQueue,
+            queuePauseReason = resolvePauseReason(
+                offline = offline,
+                batteryLow = batteryLow,
+                allowQueueOnLowBattery = preferences.allowQueueOnLowBattery,
+                hasQueued = enqueuedList.any { it.workStatus == RecognitionWorkStatus.QUEUED },
+            ),
         )
     }.flowOn(defaultDispatcher).stateIn(
         scope = viewModelScope,
@@ -125,6 +140,12 @@ internal class QueueScreenViewModel @Inject constructor(
         }
     }
 
+    fun allowLowBatteryThisTime() {
+        viewModelScope.launch {
+            recognitionScheduler.allowLowBatteryThisTime()
+        }
+    }
+
     override fun onCleared() {
         stopAudioPlayer()
     }
@@ -139,5 +160,24 @@ internal sealed class QueueScreenUiState {
         val recognitionList: ImmutableList<EnqueuedRecognitionUi>,
         val useGridLayout: Boolean,
         val showCreationDate: Boolean,
+        val queuePauseReason: QueuePauseReason,
     ) : QueueScreenUiState()
+}
+
+internal enum class QueuePauseReason {
+    None,
+    Offline,
+    LowBattery,
+}
+
+private fun resolvePauseReason(
+    offline: Boolean,
+    batteryLow: Boolean,
+    allowQueueOnLowBattery: Boolean,
+    hasQueued: Boolean,
+): QueuePauseReason {
+    if (!hasQueued) return QueuePauseReason.None
+    if (offline) return QueuePauseReason.Offline
+    if (!batteryLow) return QueuePauseReason.None
+    return if (allowQueueOnLowBattery) QueuePauseReason.None else QueuePauseReason.LowBattery
 }
