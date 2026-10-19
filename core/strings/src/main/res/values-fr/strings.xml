@@ -352,4 +352,36 @@
     <string name="result_message_no_sound_detected_device">Veuillez vous assurer que la musique joue bien sur votre appareil, puis réessayer</string>
     <string name="internal_audio_capture_may_be_blocked">Certaines applications peuvent restreindre la capture de leur audio interne. Essayez de jouer de la musique au haut-parleur et de changer la source audio au microphone.</string>
     <string name="pref_title_auto_delete_sample_on_match">Supprimer automatiquement l\'enregistrement lorsqu\'une correspondance est détectée</string>
+    <string name="backup_unencrypted_message">Les fichiers de sauvegarde ne sont pas cryptés. Conservez les à un emplacement sur.</string>
+    <string name="pref_group_auto_backup">Sauvegarde automatique</string>
+    <string name="pref_title_auto_backup">Sauvegarde automatique</string>
+    <string name="pref_subtitle_auto_backup">Faire une sauvegarde dans un dossier spécifique à intervalles réguliers</string>
+    <string name="pref_title_backup_location">Emplacement de la sauvegarde</string>
+    <string name="pref_subtitle_backup_location">Les sauvegardes seront enregistrées dans : %s</string>
+    <string name="pref_title_backup_frequency">Intervalle de sauvegarde</string>
+    <string name="pref_subtitle_backup_frequency_one">Tous les jours</string>
+    <plurals name="pref_subtitle_backup_frequency">
+        <item quantity="one">Tous les jours</item>
+        <item quantity="many">Tous les %d jours</item>
+        <item quantity="other">Tous les %d jours</item>
+    </plurals>
+    <string name="backup_frequency_dialog_title">Intervalle de sauvegarde</string>
+    <plurals name="pref_subtitle_backup_retention">
+        <item quantity="one">Dernière sauvegarde %d</item>
+        <item quantity="many">%d dernières sauvegardes</item>
+        <item quantity="other">%d dernières sauvegardes</item>
+    </plurals>
+    <string name="pref_subtitle_backup_retention_unlimited">Tout conserver</string>
+    <string name="backup_retention_dialog_title">Sauvegardes à conserver</string>
+    <string name="pref_title_backup_retention">Sauvegardes à conserver</string>
+    <string name="auto_backup_status_last_success">Dernière sauvegarde : %s</string>
+    <string name="auto_backup_status_last_failure">Dernière tentative échouée : %s</string>
+    <string name="auto_backup_status_scheduled">Une sauvegarde est planifiée</string>
+    <string name="notification_channel_name_backup">Sauvegarde</string>
+    <string name="notification_channel_desc_backup">État de la sauvegarde automatique</string>
+    <string name="auto_backup_notification_title">La sauvegarde automatique a échoué</string>
+    <string name="auto_backup_notification_auto_backup_was_turned_off">La sauvegarde automatique est désactivée</string>
+    <string name="auto_backup_error_file_not_found">La création du fichier de sauvegarde dans le dossier sélectionné a échoué</string>
+    <string name="auto_backup_error_access_denied">Accès en écriture au dossier de sauvegarde non autorisé, sélectionnez un autre dossier</string>
+    <string name="auto_backup_error_unhandled">Une erreur inattendue s\'est produise, vérifiez l\'espace libre disponible et assurez-vous que le dossier est accessible</string>
 </resources>
